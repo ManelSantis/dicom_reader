@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dicom Reader</title>
+  <link href="assets/fontawesome/css/all.css" rel="stylesheet">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body class="bg-blue-900">
+
+  <nav class="bg-blue-600 p-4 w-full">
+    <div class="container mx-auto flex justify-between items-center">
+      <ul class="space-x-4">
+        <li class="inline-block">
+          <button onclick="Open()">
+            <i class="text-white fa fa-bars cursor-pointer"></i>
+          </button>
+        </li>
+        <li class="inline-block">
+          <label for="fileInput" class="text-white cursor-pointer">
+            <i class="fa fa-search"></i>
+          </label>
+          <input type="file" id="fileInput" accept=".dcm" multiple>
+        </li>
+        <li class="inline-block"><button id="move" class="text-white" disabled><i
+              class="fa-solid fa-arrows-up-down-left-right"></i></button>
+        </li>
+        <li class="inline-block"><button id="contrast" class="text-white"><i
+              class="fa-solid fa-circle-half-stroke"></i></button></li>
+        <li class="inline-block"><button id="zoom" class="text-white"><i
+              class="fa-solid fa-magnifying-glass-plus"></i></button>
+        </li>
+        <li class="inline-block"><button id="rotate" class="text-white"><i class="fa-solid fa-rotate"></i></button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="flex w-full h-full">
+    <div class="w-[80%] h-full items-center bg-black border-black border-0" oncontextmenu="return false;">
+      <div id="dicomImage" class="w-full h-[602px] bg-black"> </div>
+    </div>
+    <div class="flex flex-col w-[20%] h-[602px] bg-white  items-center justify-center">
+      <h1 class="text-xl font-bold">Annotations</h1>
+      <div class="h-[50%] w-full flex flex-col justify-center pl-8 border-4">
+        <form id="anotacao">
+          <input type="radio" id="bone" name="cor" value="1" checked >
+          <label for="osso">Bones</label><br>
+      
+          <input type="radio" id="organ" name="cor" value="2">
+          <label for="orgao">Organs</label><br>
+      
+          <input type="radio" id="skin" name="cor" value="3">
+          <label for="pele">Skin</label><br>
+      
+          <input type="radio" id="danger" name="cor" value="4">
+          <label for="errado">Danger</label><br>
+        </form>
+      </div>
+      <div class="h-[50%] w-full bg-gray-400 flex flex-col justify-center pl-5 border-4">
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="cBone" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-600"></div>
+          <span class="ml-3 text-sm font-medium text-black">Show Bones</span>
+        </label>
+        <br>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="cOrgan" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+          <span class="ml-3 text-sm font-medium text-black">Show Organs</span>
+        </label>
+        <br>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="cSkin" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+          <span class="ml-3 text-sm font-medium text-black">Show Skin</span>
+        </label>
+        <br>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="cDanger" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+          <span class="ml-3 text-sm font-medium text-black">Show Danger</span>
+        </label>
+      </div>
+    </div>
+  </div>
+  
+
+  <div class="z-10 sidebar fixed top-0 bottom-0 p-2 left-[-300px]
+  w-[300px] overflow-y-auto text-center bg-blue-950">
+    <div class="text-gray-500 text-xl">
+
+      <div class="p-2.5 mt-1 flex items-center">
+        <h1 class="font-bold text-gray-300 text-[25px] ml-3">
+          DicomReader
+        </h1>
+        <i class="fa fa-x ml-16 cursor-pointer text-[16px] text-gray-300" onclick="Open()"></i>
+      </div>
+    </div>
+
+    <hr class="my-4 text-gray-600">
+
+    <div class="p-2.5 mt-3 font-bold flex items-center rounded-md px-4 h-8
+          duration-300 cursor-pointer hover:bg-blue-600 text-white" onclick="dropdownDog()">
+      <i class="fa fa-dog text-sm"></i>
+      <div class="flex justify-between w-full items-center">
+        <span class="text-[15px] ml-4 text-gray-200">Caninos</span>
+        <span class="text-sm rotate-180" id="arrowDog">
+          <i class="fa fa-chevron-down text-sm"></i>
+        </span>
+      </div>
+    </div>
+
+    <div class="text-left text-sm text-white font-bold mt-2 w-4/5 mx-auto" id="submenuDog">
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Coluna Vertebral</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Membro Torácico</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Laringe/Faringe</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Tórax</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Abdome</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Pelve</h1>
+    </div>
+
+    <div class="p-2.5 mt-3 font-bold flex items-center rounded-md px-4 h-8
+          duration-300 cursor-pointer hover:bg-blue-600 text-white" onclick="dropdownCat()">
+      <i class="fa fa-cat text-sm"></i>
+      <div class="flex justify-between w-full items-center">
+        <span class="text-[15px] ml-4 text-gray-200">Felinos</span>
+        <span class="text-sm rotate-180" id="arrowCat">
+          <i class="fa fa-chevron-down text-sm"></i>
+        </span>
+      </div>
+    </div>
+
+    <div class="text-left text-sm text-white font-bold mt-2 w-4/5 mx-auto" id="submenuCat">
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Coluna Vertebral</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Membro Torácico</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Laringe/Faringe</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Tórax</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Abdome</h1>
+      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Pelve</h1>
+    </div>
+
+    <div class="p-2.5 mt-3 font-bold flex items-center rounded-md px-4 h-8
+          duration-300 cursor-pointer hover:bg-blue-600 text-white" onclick="dropdownWild()">
+      <i class="fa fa-paw text-sm"></i>
+      <div class="flex justify-between w-full items-center">
+        <span class="text-[15px] ml-4 text-gray-200">Silvestre</span>
+        <span class="text-sm rotate-180" id="arrowWild">
+          <i class="fa fa-chevron-down text-sm"></i>
+        </span>
+      </div>
+    </div>
+
+    <div class="text-left text-sm text-white font-bold mt-2 w-4/4 mx-auto" id="submenuWild">
+
+      <div class="p-2.5 mt-3 font-bold flex items-center rounded-md px-4 h-8
+          duration-300 cursor-pointer hover:bg-blue-600 text-white" onclick="dropdownCutia()">
+        <div class="flex justify-between w-full items-center">
+          <span class="text-[15px] ml-4 text-gray-200">Cutia</span>
+          <span class="text-sm rotate-180" id="arrowCutia">
+            <i class="fa fa-chevron-down text-sm"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="text-left text-sm text-white font-bold mt-2 w-4/5 mx-auto" id="submenuCutia">
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Coluna Vertebral</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Membro Torácico</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Laringe/Faringe</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Tórax</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Abdome</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Pelve</h1>
+      </div>
+
+      <div class="p-2.5 mt-3 font-bold flex items-center rounded-md px-4 h-8
+          duration-300 cursor-pointer hover:bg-blue-600 text-white" onclick="dropdownCateto()">
+        <div class="flex justify-between w-full items-center">
+          <span class="text-[15px] ml-4 text-gray-200">Cateto</span>
+          <span class="text-sm rotate-180" id="arrowCateto">
+            <i class="fa fa-chevron-down text-sm"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="text-left text-sm text-white font-bold mt-2 w-4/5 mx-auto" id="submenuCateto">
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Coluna Vertebral</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Membro Torácico</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Laringe/Faringe</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Tórax</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Abdome</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Pelve</h1>
+      </div>
+
+      <div class="p-2.5 mt-3 font-bold flex items-center rounded-md px-4 h-8
+          duration-300 cursor-pointer hover:bg-blue-600 text-white" onclick="dropdownMoco()">
+        <div class="flex justify-between w-full items-center">
+          <span class="text-[15px] ml-4 text-gray-200">Mocó</span>
+          <span class="text-sm rotate-180" id="arrowMoco">
+            <i class="fa fa-chevron-down text-sm"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="text-left text-sm text-white font-bold mt-2 w-4/5 mx-auto" id="submenuMoco">
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Coluna Vertebral</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Membro Torácico</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Laringe/Faringe</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Tórax</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Abdome</h1>
+        <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Pelve</h1>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <script src="node_modules/cornerstone-wado-image-loader/dist/cornerstoneWADOImageLoader.bundle.min.js"></script>
+  <script type="module" src="node_modules/cornerstone-tools/dist/cornerstoneTools.min.js"></script>
+  <script type="module" src="node_modules/cornerstone-math/dist/cornerstoneMath.min.js"></script>
+
+  <script type="text/javascript">
+    function dropdownDog() {
+      document.querySelector('#submenuDog').classList.toggle('hidden');
+      document.querySelector('#arrowDog').classList.toggle('rotate-0');
+    }
+
+
+    function dropdownCat() {
+      document.querySelector('#submenuCat').classList.toggle('hidden');
+      document.querySelector('#arrowCat').classList.toggle('rotate-0');
+    }
+
+    function dropdownWild() {
+      document.querySelector('#submenuWild').classList.toggle('hidden');
+      document.querySelector('#arrowWild').classList.toggle('rotate-0');
+    }
+
+    function dropdownCutia() {
+      document.querySelector('#submenuCutia').classList.toggle('hidden');
+      document.querySelector('#arrowCutia').classList.toggle('rotate-0');
+    }
+
+    function dropdownCateto() {
+      document.querySelector('#submenuCateto').classList.toggle('hidden');
+      document.querySelector('#arrowCateto').classList.toggle('rotate-0');
+    }
+
+    function dropdownMoco() {
+      document.querySelector('#submenuMoco').classList.toggle('hidden');
+      document.querySelector('#arrowMoco').classList.toggle('rotate-0');
+    }
+
+    dropdownDog()
+    dropdownCat()
+    dropdownWild()
+    dropdownCutia()
+    dropdownCateto()
+    dropdownMoco()
+
+    function Open() {
+      document.querySelector('.sidebar').classList.toggle('left-[-300px]');
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+
+</body>
+
+</html>
