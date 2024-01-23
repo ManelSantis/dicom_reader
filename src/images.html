@@ -5,8 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dicom Reader</title>
-  <link href="assets/fontawesome/css/all.css" rel="stylesheet">
-  <link rel="stylesheet" href="src/style.css">
+  <link href="../assets/fontawesome/css/all.css" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
 </head>
 
 <body class="bg-blue-900">
@@ -19,22 +19,6 @@
             <i class="text-white fa fa-bars cursor-pointer"></i>
           </button>
         </li>
-        <li class="inline-block">
-          <label for="fileInput" class="text-white cursor-pointer">
-            <i class="fa fa-search"></i>
-          </label>
-          <input type="file" id="fileInput" accept=".dcm" multiple>
-        </li>
-        <li class="inline-block"><button id="move" class="text-white" disabled><i
-              class="fa-solid fa-arrows-up-down-left-right"></i></button>
-        </li>
-        <li class="inline-block"><button id="contrast" class="text-white"><i
-              class="fa-solid fa-circle-half-stroke"></i></button></li>
-        <li class="inline-block"><button id="zoom" class="text-white"><i
-              class="fa-solid fa-magnifying-glass-plus"></i></button>
-        </li>
-        <li class="inline-block"><button id="rotate" class="text-white"><i class="fa-solid fa-rotate"></i></button></li>
-        <li class="inline-block"><button id="save" class="text-white" disabled><i class="fa-solid fa-save"></i></button></li>
       </ul>
     </div>
   </nav>
@@ -44,23 +28,7 @@
       <div id="dicomImage" class="w-full h-[602px] bg-black"> </div>
     </div>
     <div class="flex flex-col w-[20%] h-[602px] bg-white  items-center justify-center">
-      <h1 class="text-xl font-bold">Annotations</h1>
-      <div class="h-[50%] w-full flex flex-col justify-center pl-8 border-4">
-        <form id="anotacao">
-          <input type="radio" id="bone" name="cor" value="1" checked >
-          <label for="osso">Bones</label><br>
-      
-          <input type="radio" id="organ" name="cor" value="2">
-          <label for="orgao">Organs</label><br>
-      
-          <input type="radio" id="skin" name="cor" value="3">
-          <label for="pele">Skin</label><br>
-      
-          <input type="radio" id="danger" name="cor" value="4">
-          <label for="errado">Danger</label><br>
-        </form>
-      </div>
-      <div class="h-[50%] w-full bg-gray-400 flex flex-col justify-center pl-5 border-4">
+      <div class="h-[100%] w-full bg-gray-400 flex flex-col justify-center pl-5 border-4">
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" id="cBone" class="sr-only peer" checked>
           <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-600"></div>
@@ -222,10 +190,6 @@
   </div>
   </div>
 
-  <script src="node_modules/cornerstone-wado-image-loader/dist/cornerstoneWADOImageLoader.bundle.min.js"></script>
-  <script type="module" src="node_modules/cornerstone-tools/dist/cornerstoneTools.min.js"></script>
-  <script type="module" src="node_modules/cornerstone-math/dist/cornerstoneMath.min.js"></script>
-
   <script type="text/javascript">
     function dropdownDog() {
       document.querySelector('#submenuDog').classList.toggle('hidden');
@@ -269,7 +233,6 @@
       document.querySelector('.sidebar').classList.toggle('left-[-300px]');
     }
   </script>
-  <script type="module" src="app.js"></script>
 
 </body>
 

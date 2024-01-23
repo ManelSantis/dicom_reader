@@ -1,3 +1,4 @@
+import axios from 'axios';
 import cornerstone from 'cornerstone-core';
 import cornerstoneMath from 'cornerstone-math';
 import cornerstoneTools from 'cornerstone-tools';
@@ -21,6 +22,7 @@ let move = document.getElementById('move');
 let contrast = document.getElementById('contrast');
 let zoom = document.getElementById('zoom')
 let rotate = document.getElementById('rotate');
+let save = document.getElementById('save');
 
 const tools = [move, contrast, zoom, rotate];
 
@@ -85,7 +87,7 @@ cDanger.addEventListener('change', function () { handleVisibilityChange(cDanger,
 /////////////////////////////
 //Função genérica para selecionar uma ferramenta
 function setTool(toolName, disableList, activeTool) {
-  
+
   disableList.forEach((tool, index) => tools[index].disabled = tool);
 
   currentTool = toolName;
@@ -104,7 +106,56 @@ zoom.addEventListener('click', function (event) { setTool("zoom", [false, false,
 rotate.addEventListener('click', function (event) { setTool("rotate", [false, false, false, true], 'Rotate'); });
 /////////////////////////////
 
+/////////////////////////////
+
+save.addEventListener('click', async function (event) {
+
+  let images_data = [];
+
+  for (const file of files) {
+    for (const noteArray of annotations.states) {
+      const notes = noteArray.map(note => ({
+        active: note.active,
+        color: note.color,
+        handles: note.handles,
+        invalidated: note.invalidated,
+        text: note.text,
+        uuid: note.uuid,
+        visible: note.visible
+      }));
+      images_data.push({
+        image_path: file.name,  // Caminho da imagem
+        notes //Notas presentes na imagem
+      });
+    }
+  }
+
+  const archive_data = {
+    archive_name: 'Testando',
+    archive_date: '2022-01-01',
+    imagesWithAnnotations: images_data
+  }
+
+  try {
+    // Fazer uma solicitação POST para a rota saveArchive no servidor
+    const response = await axios.post('http://localhost:5173/saveArchive', archive_data);
+
+    // Exibir a resposta do servidor
+    console.log(response.data);
+    alert('Dados, imagens e anotações salvas com sucesso!');
+  } catch (error) {
+    // Lidar com erros de solicitação
+    console.error('Erro ao salvar no servidor:', error);
+    alert('Erro ao salvar no servidor. Consulte o console para mais detalhes.');
+  }
+
+});
+
+
+/////////////////////////////
+
 fileInput.addEventListener('change', function (event) {
+  save.disabled = false; //Ativar opção de salvar
   files = event.target.files; //Lista de Arquivos
   currentImageId = 0;
   stack.imageIds = [];
@@ -216,6 +267,7 @@ element.addEventListener('wheel', (e) => {
 });
 
 function updateImage(newImageId) {
+  console.log(annotations);
   cornerstoneTools.clearToolState(element, note);
   currentImageId = newImageId;
   stack.currentImageIdIndex = newImageId;
