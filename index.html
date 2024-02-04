@@ -115,7 +115,7 @@
     </div>
 
     <div class="text-left text-sm text-white font-bold mt-2 w-4/5 mx-auto" id="submenuDog">
-      <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
+      <h1 id="caninoCranio" class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Crânio</h1>
       <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Coluna Vertebral</h1>
       <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Membro Torácico</h1>
       <h1 class="cursor-pointer p-2 hover:bg-blue-300 rounded-md mt-1">Laringe/Faringe</h1>
@@ -268,6 +268,14 @@
     function Open() {
       document.querySelector('.sidebar').classList.toggle('left-[-300px]');
     }
+
+    const caninoCranio = document.getElementById('caninoCranio');
+
+        // Adiciona um evento de clique ao elemento h1
+        caninoCranio.addEventListener('click', function() {
+            // Redireciona para a página images.html
+            window.location.href = './src/images.html';
+        });
   </script>
   <script type="module" src="app.js"></script>
 

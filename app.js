@@ -1,9 +1,9 @@
-import axios from 'axios';
 import cornerstone from 'cornerstone-core';
 import cornerstoneMath from 'cornerstone-math';
 import cornerstoneTools from 'cornerstone-tools';
 import dicomParser from 'dicom-parser';
 import hammer from 'hammerjs';
+import { addArchive, addImage, addNote } from './src/services/SaveArchive.js';
 
 //Checkboxes
 let cBone = document.getElementById('cBone');
@@ -34,6 +34,7 @@ cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
 
 let currentColor = "yellow";
+let currentTool = "move";
 let radios = document.getElementsByName("cor");
 
 //Ferramentas+
@@ -110,43 +111,57 @@ rotate.addEventListener('click', function (event) { setTool("rotate", [false, fa
 
 save.addEventListener('click', async function (event) {
 
-  let images_data = [];
-
-  for (const file of files) {
-    for (const noteArray of annotations.states) {
-      const notes = noteArray.map(note => ({
-        active: note.active,
-        color: note.color,
-        handles: note.handles,
-        invalidated: note.invalidated,
-        text: note.text,
-        uuid: note.uuid,
-        visible: note.visible
-      }));
-      images_data.push({
-        image_path: file.name,  // Caminho da imagem
-        notes //Notas presentes na imagem
-      });
-    }
-  }
-
-  const archive_data = {
-    archive_name: 'Testando',
-    archive_date: '2022-01-01',
-    imagesWithAnnotations: images_data
-  }
-
+  let archive_id = null;
   try {
-    // Fazer uma solicitação POST para a rota saveArchive no servidor
-    const response = await axios.post('http://localhost:5173/saveArchive', archive_data);
-
-    // Exibir a resposta do servidor
-    console.log(response.data);
-    alert('Dados, imagens e anotações salvas com sucesso!');
+    let archiveData = {
+      archive_name: 'Teste1',
+      archive_date: '2024-01-29'
+    };
+    const response = await addArchive(archiveData);
+    archive_id = response.id;
   } catch (error) {
-    // Lidar com erros de solicitação
-    console.error('Erro ao salvar no servidor:', error);
-    alert('Erro ao salvar no servidor. Consulte o console para mais detalhes.');
+    console.error(error);
+  }
+
+  let id = 0;
+  for (const element of files) {
+    try {
+      const imgElement = document.createElement("img");
+      imgElement.src = window.URL.createObjectURL(element);
+      imgElement.onload = function () {
+        window.URL.revokeObjectURL(this.src);
+      };
+
+      let imageData = {
+        image_path: imgElement.src,
+        archive_id: archive_id
+      };
+
+      const response = await addImage(imageData, archive_id);
+      let image_id = response.id;
+        for (const note of annotations.states[id]) {
+          try {
+            let noteData = {
+              image_id: image_id,
+              active: note.active,
+              color: note.color,
+              handles: note.handles,
+              invalidated: note.invalidated,
+              note_text: note.text,
+              uuid_text: note.uuid,
+              visible: note.visible
+            };
+            const resp = await addNote(noteData, image_id);
+            console.log(resp);
+          } catch (error) {
+            console.error(error);
+          }
+      }
+
+    } catch (error) {
+      console.error(error);
+    }
+    id++;
   }
 
 });
@@ -267,7 +282,6 @@ element.addEventListener('wheel', (e) => {
 });
 
 function updateImage(newImageId) {
-  console.log(annotations);
   cornerstoneTools.clearToolState(element, note);
   currentImageId = newImageId;
   stack.currentImageIdIndex = newImageId;
@@ -275,6 +289,7 @@ function updateImage(newImageId) {
 
   const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(files[currentImageId]);
   cornerstone.loadImage(imageId).then(function (image) {
+    console.log(image);
     const viewport = cornerstone.getDefaultViewportForImage(element, image);
     cornerstone.displayImage(element, image, viewport);
     loadAnnotations(currentImageId);
