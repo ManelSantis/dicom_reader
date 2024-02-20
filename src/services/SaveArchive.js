@@ -27,6 +27,7 @@ export async function addArchive(archiveData) {
 };
 
 export async function addImage(imageData, archive_id) {
+
     try {
         const response = await fetch(queries.dataBaseURL + 'api/v1/archive/image/' + archive_id, {
             method: 'POST',

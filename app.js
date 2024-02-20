@@ -3,7 +3,7 @@ import cornerstoneMath from 'cornerstone-math';
 import cornerstoneTools from 'cornerstone-tools';
 import dicomParser from 'dicom-parser';
 import hammer from 'hammerjs';
-import { addArchive, addImage, addNote } from './src/services/SaveArchive.js';
+import { uploadArrayBuffer } from './firebase.js';
 
 //Checkboxes
 let cBone = document.getElementById('cBone');
@@ -109,12 +109,36 @@ rotate.addEventListener('click', function (event) { setTool("rotate", [false, fa
 
 /////////////////////////////
 
-save.addEventListener('click', async function (event) {
+save.addEventListener('click', async function () {
 
-  let archive_id = null;
+
+  try {
+    const file = files[0];
+    const reader = new FileReader();
+    const pasta = '40';
+    const numero = 1;
+
+    reader.onload = async function (event) {
+      const dicomFileBuffer = event.target.result;
+      const uploadStatus = await uploadArrayBuffer(dicomFileBuffer, `image${numero}.dcm`, pasta);
+
+        if (uploadStatus) {
+            console.log(`Arquivo image${numero}.dcm foi enviado com sucesso para a pasta ${pasta}`);
+        } else {
+            console.error(`Erro ao enviar arquivo image${numero}.dcm para a pasta ${pasta}`);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+
+  } catch (error) {
+    console.error(error);
+  }
+
+
+  /*let archive_id = null;
   try {
     let archiveData = {
-      archive_name: 'Teste1',
+      archive_name: 'Teste23',
       archive_date: '2024-01-29'
     };
     const response = await addArchive(archiveData);
@@ -126,18 +150,15 @@ save.addEventListener('click', async function (event) {
   let id = 0;
   for (const element of files) {
     try {
-      const imgElement = document.createElement("img");
-      imgElement.src = window.URL.createObjectURL(element);
-      imgElement.onload = function () {
-        window.URL.revokeObjectURL(this.src);
-      };
 
       let imageData = {
-        image_path: imgElement.src,
+        image_path: element,
         archive_id: archive_id
       };
 
-      const response = await addImage(imageData, archive_id);
+      console.log(imageData.image_path)
+
+      const response = await addImage(imageData.image_path, archive_id);
       let image_id = response.id;
         for (const note of annotations.states[id]) {
           try {
@@ -162,16 +183,16 @@ save.addEventListener('click', async function (event) {
       console.error(error);
     }
     id++;
-  }
+  }*/
 
 });
-
 
 /////////////////////////////
 
 fileInput.addEventListener('change', function (event) {
   save.disabled = false; //Ativar opção de salvar
   files = event.target.files; //Lista de Arquivos
+  console.log(files);
   currentImageId = 0;
   stack.imageIds = [];
   annotations.imageIds = [];
@@ -289,7 +310,6 @@ function updateImage(newImageId) {
 
   const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(files[currentImageId]);
   cornerstone.loadImage(imageId).then(function (image) {
-    console.log(image);
     const viewport = cornerstone.getDefaultViewportForImage(element, image);
     cornerstone.displayImage(element, image, viewport);
     loadAnnotations(currentImageId);
