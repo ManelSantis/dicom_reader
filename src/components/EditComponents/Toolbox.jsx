@@ -6,7 +6,7 @@ export const Toolbox = () => {
                 <ul className="space-x-6 pt-6">
                     <li className="inline-block mx-6 pb-6">
                         <label title="Adicionar Novo Arquivo" htmlFor="fileInput" className="text-[#F1FAEE] cursor-pointer">
-                            <i className="fa fa-plus fa-xl"></i>
+                            <i className="fa fa-folder-open fa-xl"></i>
                         </label>
                         <input type="file" id="fileInput" accept=".dcm" multiple></input>
                     </li>

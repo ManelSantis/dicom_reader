@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Annotations } from './EditComponents/Annotations';
-import { Editor } from './EditComponents/Editor';
+import { Editor } from "./EditComponents/Editor";
 import { Toolbox } from "./EditComponents/Toolbox";
+import EditFunctions from "./EditFuncions";
 
 export const Edit = () => {
 
@@ -21,6 +22,11 @@ export const Edit = () => {
 
         return () => window.removeEventListener('resize', updateHeight);
 
+    }, []);
+
+    useEffect(() => {
+        const input = EditFunctions();
+        input.initialize();
     }, []);
 
     return (

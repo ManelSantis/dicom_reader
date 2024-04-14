@@ -9,9 +9,9 @@ export const Annotations = () => {
                     <h1 className="text-[#F1FAEE] text-[40px] text-bold">Anotações</h1>
                 </div>
                 <div className="w-full flex flex-col justify-center items-center pb-6">
-                    <select className="bg-[#F1FAEE] text-[#2C536B] text-center w-[80%] rounded-md border-[#A8DADC]" name="specie" id="type">
-                        <option value="">Selecione o Tipo de Anotação</option>
-                        <option value="ossos">Ossos</option>
+                    <select id="typeSpecie" className="bg-[#F1FAEE] text-[#2C536B] text-center w-[80%] rounded-md border-[#A8DADC]" name="specie">
+                        <option value="default">Selecione o Tipo de Anotação</option>
+                        <option value="ossos">Osso</option>
                         <option value="pele">Pele</option>
                         <option value="orgao">Órgão</option>
                         <option value="perigo">Perigo</option>
