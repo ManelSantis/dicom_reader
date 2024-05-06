@@ -6,12 +6,13 @@ export const ShowDicom = () => {
     const { archive_id } = useParams();
 
     useEffect(() => {
+        console.log("userEffect")
         const input = ShowFunctions(archive_id);
         input.initialize();
-    }, []);
+    });
 
     return (
-        <div className="w-full h-full items-center bg-black" onContextMenu={() => false}>
+        <div className="w-full h-[600px] items-center bg-black" onContextMenu={() => false}>
                 <div id="dicomImage" className="w-full h-full bg-black"> </div>
         </div>
     )

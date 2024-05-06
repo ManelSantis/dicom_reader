@@ -59,4 +59,4 @@ async function uploadArrayBuffer(arrayBuffer, nomeArquivo, nomePasta) {
     }
 }
 
-export { uploadArrayBuffer };
+export { storage, uploadArrayBuffer };

@@ -325,6 +325,7 @@ export const EditFunctions = () => {
 
     function loadAnnotations(imageId) {
         if (annotations.states[imageId]) {
+            console.log(annotations.states[imageId])
             for (const annotation of annotations.states[imageId]) {
                 cornerstoneTools.addToolState(element, note, annotation);
             }

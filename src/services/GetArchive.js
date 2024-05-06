@@ -27,7 +27,7 @@ export async function getArchiveById(archive_id) {
 
 export async function getArchiveByAnimalLocal(archive_animal, archive_local) {
     try {
-        const response = await fetch(queries.dataBaseURL + 'api/v1/archive/' + archive_animal + "/" + archive_local, {
+        const response = await fetch(queries.dataBaseURL + 'api/v1/archive/animal/' + archive_animal + "/local/" + archive_local, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
