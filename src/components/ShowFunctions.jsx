@@ -13,11 +13,13 @@ cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
+//let isInitialized = false;
 
 export const ShowFunctions = (archive_id) => {
 
-    let queryList;
     let fileList;
+    let imageListDownload;
+    let imageList;
     let currentImageId = 0;
     const note = 'ArrowAnnotate';
 
@@ -27,11 +29,26 @@ export const ShowFunctions = (archive_id) => {
     let element = document.getElementById('dicomImage');
 
     const initialize = async () => {
+        //if (isInitialized) return;
+        //isInitialized = true;
+
         try {
-            // Espera a resolução da Promise retornada por fetchData
+
             fileList = await fetchData();
 
-            // Resto do seu código aqui
+            const promises = fileList.map(file => getImageByPath(file.image_path));
+
+            const imageBlobs = await Promise.all(promises);
+
+            imageListDownload = new Set();
+
+            imageBlobs.forEach(dcmData => {
+                const blob = new Blob([dcmData]);
+                imageListDownload.add(blob);
+            });
+            console.log(imageListDownload)
+            imageList = Array.from(imageListDownload);
+
             cornerstone.enable(element);
             element.addEventListener('wheel', handleMouseWheel);
             currentImageId = 0;
@@ -51,11 +68,11 @@ export const ShowFunctions = (archive_id) => {
             cornerstoneTools.addTool(apiTool);
 
             cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 })
-
             updateImage(currentImageId);
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
         }
+
     };
 
     const fetchData = async () => {
@@ -93,8 +110,8 @@ export const ShowFunctions = (archive_id) => {
                 currentImageId = 0;
             }
 
-            if (currentImageId == files.length) {
-                currentImageId = files.length - 1;
+            if (currentImageId == fileList.length) {
+                currentImageId = fileList.length - 1;
             }
         }
         updateImage(currentImageId);
@@ -104,31 +121,17 @@ export const ShowFunctions = (archive_id) => {
         cornerstoneTools.clearToolState(element, note);
         currentImageId = newImageId;
 
-        getImageByPath(fileList[currentImageId].image_path)
-        .then(dcmData => {
-            const blob = new Blob([dcmData]);
-            console.log(blob)
-            const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(blob);
-            console.log(imageId)
-            cornerstone.loadImage(imageId).then(function (image) {
-                const viewport = cornerstone.getDefaultViewportForImage(element, image);
-                cornerstone.displayImage(element, image, viewport);
-                loadAnnotations(currentImageId);
-                cornerstone.updateImage(element);
-
-            }).catch((error) => {
-                console.error('Error loading image:', error);
-            });
+        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(imageList[currentImageId]);
+        cornerstone.loadImage(imageId).then(function (image) {
+            const viewport = cornerstone.getDefaultViewportForImage(element, image);
+            cornerstone.displayImage(element, image, viewport);
+            loadAnnotations(currentImageId);
         })
-        .catch(error => {
-            console.error('Error fetching DICOM:', error);
-        });
     }
 
     function loadAnnotations(imageId) {
         if (annotations.states[imageId]) {
             for (const annotation of annotations.states[imageId]) {
-            console.log(annotation)
                 cornerstoneTools.addToolState(element, note, annotation);
             }
         }

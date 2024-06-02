@@ -25,7 +25,9 @@ cornerstoneTools.init(
     }
 );
 
-export const EditFunctions = () => {
+let isInitialized = false;
+
+export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage }) => {
 
     //TOOLBOX TOOLS
     let move = document.getElementById('move');
@@ -66,6 +68,10 @@ export const EditFunctions = () => {
     let element = document.getElementById('dicomImage');
 
     const initialize = () => {
+
+        if (isInitialized) return;
+        isInitialized = true;
+        
         const fileInput = document.getElementById("fileInput");
         fileInput.addEventListener('change', handleFileChange);
         typeSpecie.addEventListener('change', handleTypeChange);
@@ -74,6 +80,7 @@ export const EditFunctions = () => {
         pele.checked = true;
         orgao.checked = true;
         perigo.checked = true;
+        console.log("UserEffectS")
     };
 
     const handleFileChange = (event) => {
@@ -138,8 +145,8 @@ export const EditFunctions = () => {
                 currentImageId = 0;
             }
 
-            if (currentImageId == files.length) {
-                currentImageId = files.length - 1;
+            if (currentImageId == fileList.length) {
+                currentImageId = fileList.length - 1;
             }
         }
         updateImage(currentImageId);
@@ -179,6 +186,9 @@ export const EditFunctions = () => {
     }
 
     const handleSaveClick = async (event) => {
+        setIsSaving(true);
+        setProgressMessage('Criando arquivo..')
+        setProgress(0);
         let archive_id = null;
         try {
             let archiveData = {
@@ -187,18 +197,24 @@ export const EditFunctions = () => {
                 archive_animal: type.value,
                 archive_local: part.value
             };
+        setProgress(5);
             const response = await addArchive(archiveData);
-            archive_id = response.id;
+            archive_id = response.id;        
         } catch (error) {
             console.error(error);
         }
+        setProgress(15);
+
+        let progress = 15.0;
+        let valuePerImage = 85 / fileList.length;
+        valuePerImage =  parseFloat(valuePerImage.toFixed(2));
 
         let id = 0;
         for (const element of fileList) {
             const past = archive_id;
             const number = id;
+            setProgressMessage('Salvando imagem' + number + ' do arquivo...')
             try {
-
                 const path = await uploadAndReadFile(element, number, past);
 
                 let imageData = {
@@ -208,6 +224,9 @@ export const EditFunctions = () => {
 
                 const response = await addImage(imageData, imageData.archive_id);
                 let image_id = response.id;
+                
+                setProgressMessage('Salvando anotações da imagem' + number + ' do arquivo...')
+
                 for (const note of annotations.states[id]) {
                     try {
                         let noteData = {
@@ -226,13 +245,23 @@ export const EditFunctions = () => {
                         console.error(error);
                     }
                 }
-
             } catch (error) {
                 console.error(error);
             }
+            progress += valuePerImage;
+            progress = parseFloat(progress.toFixed(2));
+            setProgress(progress);
             id++;
         }
-    }
+        setProgress(100);
+        setIsSaving(false);
+        setProgressMessage('Arquivo salvo')
+        setSaveMessage('Arquivo salvo');
+        setTimeout(() => {
+            setSaveMessage('');
+            window.location.reload();
+        }, 3000); 
+    };
 
     async function uploadAndReadFile(element, number, past) {
         return new Promise((resolve, reject) => {
