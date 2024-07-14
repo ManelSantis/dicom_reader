@@ -3,21 +3,21 @@ import { CheckBox } from "./CheckBox";
 export const ShowAnnotationsTable = () => {
 
     return (
-        <table className="w-full text-center">
-            <tbody>
-                <tr id="line1" className="text-[#F1FAEE] font-bold w-12">
-                    <td className="px-6"> Ossos </td>
-                    <td className="px-6"> Pele </td>
-                    <td className="px-6"> Órgão </td>
-                    <td className="px-6"> Perigo </td>
-                </tr>
-                <tr id="box1" className="text-[#F1FAEE] w-12 pt-4">
-                    <td> <CheckBox id="osso" /> </td>
-                    <td> <CheckBox id="pele" /> </td>
-                    <td> <CheckBox id="orgao" /> </td>
-                    <td> <CheckBox id="perigo" /> </td>
-                </tr>
-            </tbody>
-        </table>
+        <>
+            <div className="grid grid-cols-2 gap-4 text-[#F1FAEE] font-[600] mt-6">
+                <div className="flex items-center">
+                    <CheckBox id="osso" /> <span className="ml-2">Osso</span>
+                </div>
+                <div className="flex items-center">
+                    <CheckBox id="pele" /> <span className="ml-2">Pele</span>
+                </div>
+                <div className="flex items-center">
+                    <CheckBox id="orgao" /> <span className="ml-2">Órgão</span>
+                </div>
+                <div className="flex items-center">
+                    <CheckBox id="perigo" /> <span className="ml-2">Perigo</span>
+                </div>
+            </div>
+        </>
     )
 }

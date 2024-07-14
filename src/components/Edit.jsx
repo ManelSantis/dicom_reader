@@ -1,15 +1,45 @@
 import { useEffect, useState } from 'react';
 import { Annotations } from './EditComponents/Annotations';
 import { Editor } from "./EditComponents/Editor";
-import { Toolbox } from "./EditComponents/Toolbox";
+import { ImagesCarousel } from "./EditComponents/EditorComponents/ImagesCarousel";
 import EditFunctions from "./EditFunctions";
+import { useLogin } from './LoginProvider'; // Verifique o caminho do seu provedor de login
 
 export const Edit = () => {
+    const { isAdmin, isLogin } = useLogin(); // Verifique se os estados isAdmin e isLogin são fornecidos corretamente
     const [newHeight, setNewHeight] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [progress, setProgress] = useState(0);
     const [progressMessage, setProgressMessage] = useState('');
     const [saveMessage, setSaveMessage] = useState('');
+    const [currentImage, setCurrentImage] = useState(0);
+    const [totalImages, setTotalImages] = useState(0);
+    const [handleSave, setHandleSave] = useState([false, false, false]);
+    const [pageLoadTime, setPageLoadTime] = useState(Date.now());
+
+    useEffect(() => {
+        let editFunctions = null;
+        if (isAdmin && isLogin) {
+
+            editFunctions = EditFunctions({
+                setIsSaving,
+                setProgress,
+                setProgressMessage,
+                setSaveMessage,
+                setCurrentImage,
+                setTotalImages,
+                setHandleSave,
+            });
+            editFunctions.initialize();
+            
+        }
+
+        return () => {
+            if (editFunctions) {
+                editFunctions.cleanup();
+            }
+        };
+    }, [isAdmin, isLogin, pageLoadTime]);
 
     useEffect(() => {
         function updateHeight() {
@@ -20,22 +50,23 @@ export const Edit = () => {
         }
 
         window.addEventListener('resize', updateHeight);
-
         updateHeight();
 
-        return () => window.removeEventListener('resize', updateHeight);
-
+        return () => {
+            window.removeEventListener('resize', updateHeight);
+        };
     }, []);
 
-    useEffect(() => {
-        const input = EditFunctions({ setIsSaving, setProgress, setProgressMessage, setSaveMessage });
-        input.initialize();
-    }, []);
+    if (!isLogin) {
+        return <div className="flex w-screen h-screen items-center justify-center bg-slate-700 text-white">Por favor, faça login para acessar o editor.</div>;
+    }
 
     return (
         <div style={{ height: newHeight + 'px' }} className="flex w-screen bg-slate-700">
-            <Toolbox />
-            <Editor />
+            <div className="w-[80%] h-full">
+                <Editor handleSaveClick={handleSave} />
+                <ImagesCarousel totalImages={totalImages} currentImage={currentImage} />
+            </div>
             <Annotations />
             {isSaving && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">

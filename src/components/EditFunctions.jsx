@@ -5,7 +5,6 @@ import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import hammer from 'hammerjs';
 import { uploadArrayBuffer } from '../firebase/firebase.js';
-import { addArchive, addImage, addNote } from '../services/SaveArchive.js';
 
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
@@ -14,9 +13,9 @@ cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
 
-const WwwcTool = cornerstoneTools.WwwcTool;
-const PanTool = cornerstoneTools.PanTool;
-const RotateTool = cornerstoneTools.RotateTool;
+//const WwwcTool = cornerstoneTools.WwwcTool;
+//const PanTool = cornerstoneTools.PanTool;
+//const RotateTool = cornerstoneTools.RotateTool;
 //const ZoomTool = cornerstoneTools.ZoomTool;
 
 cornerstoneTools.init(
@@ -27,13 +26,13 @@ cornerstoneTools.init(
 
 let isInitialized = false;
 
-export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage }) => {
+export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage, setCurrentImage, setTotalImages, setHandleSave }) => {
 
     //TOOLBOX TOOLS
-    let move = document.getElementById('move');
+    /*let move = document.getElementById('move');
     let contrast = document.getElementById('contrast');
     let zoom = document.getElementById('zoom')
-    let rotate = document.getElementById('rotate');
+    let rotate = document.getElementById('rotate');*/
     let currentColor = "yellow";
     const note = 'ArrowAnnotate';
 
@@ -50,17 +49,18 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     let optionOrgao = typeSpecie.querySelector('option[value="orgao"]');
     let optionPerigo = typeSpecie.querySelector('option[value="perigo"]');
 
-    const tools = [move, contrast, zoom, rotate];
+    //const tools = [move, contrast, zoom, rotate];
 
     //Save Tools
     const save = document.getElementById('save');
     const title = document.getElementById('title');
     const type = document.getElementById('type');
     const part = document.getElementById('part');
+    const cancel = document.getElementById('cancel');
 
     let fileList;
     let currentImageId = 0;
-    let currentTool = "move";
+    //let currentTool = "move";
 
     const stack = { currentImageIdIndex: 0, imageIds: [], };
     const annotations = { currentImageId, imageIds: [], states: [] };
@@ -71,23 +71,25 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
 
         if (isInitialized) return;
         isInitialized = true;
-        
+
         const fileInput = document.getElementById("fileInput");
         fileInput.addEventListener('change', handleFileChange);
         typeSpecie.addEventListener('change', handleTypeChange);
         save.addEventListener('click', handleSaveClick);
+        cancel.addEventListener('click', handleCancelClick);
         osso.checked = true;
         pele.checked = true;
         orgao.checked = true;
         perigo.checked = true;
-        console.log("UserEffectS")
     };
 
     const handleFileChange = (event) => {
         fileList = event.target.files;
+        setTotalImages(fileList.length);
         cornerstone.enable(element);
 
         element.addEventListener('wheel', handleMouseWheel);
+        console.log(fileList);
         save.disabled = false;
 
         currentImageId = 0;
@@ -104,14 +106,14 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         cornerstoneTools.addToolState(element, 'stack', stack);
 
         //Note Tool
-        const apiTool = cornerstoneTools[`${note}Tool`];
-        cornerstoneTools.addTool(apiTool);
+        //const apiTool = cornerstoneTools[`${note}Tool`];
+        //cornerstoneTools.addTool(apiTool);
         cornerstoneTools.toolColors.setToolColor('rgb(255, 255, 0)');
         cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 })
         ///////////
 
         //Adicionando as Ferramentas no Elemento
-        cornerstoneTools.addTool(PanTool)
+        /*cornerstoneTools.addTool(PanTool)
         cornerstoneTools.addTool(WwwcTool)
         cornerstoneTools.addTool(cornerstoneTools.ZoomTool, {
             configuration: {
@@ -122,7 +124,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
             }
         });
         cornerstoneTools.addTool(RotateTool)
-        cornerstoneTools.setToolActive("Pan", { mouseButtonMask: 1 })
+        cornerstoneTools.setToolActive("Pan", { mouseButtonMask: 1 })*/
 
         updateImage(currentImageId);
     };
@@ -186,6 +188,15 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     }
 
     const handleSaveClick = async (event) => {
+
+        if (!title.value || !type.value || !part.value) {
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            setHandleSave([!title.value, !type.value, !part.value]);
+            return;
+        }
+
+        setHandleSave([true, true, true]);
+
         setIsSaving(true);
         setProgressMessage('Criando arquivo..')
         setProgress(0);
@@ -260,8 +271,12 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         setTimeout(() => {
             setSaveMessage('');
             window.location.reload();
-        }, 3000); 
+        }, 3000);
     };
+
+    const handleCancelClick = (event) => {
+        window.location.reload();
+    }
 
     async function uploadAndReadFile(element, number, past) {
         return new Promise((resolve, reject) => {
@@ -284,7 +299,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
 
     /////////////////////////////
     //Função generica para selecionar as ferramentas
-    function setTool(toolName, disableList, activeTool) {
+    /*function setTool(toolName, disableList, activeTool) {
         disableList.forEach((tool, index) => tools[index].disabled = tool);
         currentTool = toolName;
         disableList.forEach(tool => cornerstoneTools.setToolDisabled(tool));
@@ -298,7 +313,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     //Evento para selecionar zoom
     zoom.addEventListener('click', function (event) { setTool("zoom", [false, false, true, false], 'Zoom'); });
     //Evento para selecionar rotacionar
-    rotate.addEventListener('click', function (event) { setTool("rotate", [false, false, false, true], 'Rotate'); });
+    rotate.addEventListener('click', function (event) { setTool("rotate", [false, false, false, true], 'Rotate'); });*/
     /////////////////////////////
 
     /////////////////////////////
@@ -350,6 +365,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         }).catch((error) => {
             console.error('Error loading image:', error);
         });
+        setCurrentImage(newImageId+1);
     }
 
     function loadAnnotations(imageId) {
@@ -373,10 +389,24 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
             annotations.states[imageId] = currentState.data;
         }
     }
+
+    const cleanup = () => {
+         // Limpa as configurações ou estados quando o componente é desmontado
+         setIsSaving(false);
+         setProgress(0);
+         setProgressMessage('');
+         setSaveMessage('');
+         setCurrentImage(0);
+         setTotalImages(0);
+         setHandleSave([false, false, false]);
+         isInitialized = false; // Reinicializa para próximo uso
+    };
+
     /////////////////////////////
 
     return {
-        initialize: initialize
+        initialize: initialize,
+        cleanup
     };
 };
 

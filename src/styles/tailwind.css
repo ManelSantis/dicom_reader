@@ -6,7 +6,10 @@ input[type="file"] {
     display: none;
 }
 
-input:focus {
+#part:focus,
+#type:focus,
+#title:focus,
+#specie:focus {
     border: none;
     outline: none;
 }
@@ -15,5 +18,36 @@ select {
     cursor: pointer;
     appearance: none;
     outline: none;
-    border: none;
+}
+
+/* width */
+::-webkit-scrollbar {
+    width: 5px;
+}
+  
+/* Track */
+::-webkit-scrollbar-track {
+    border-radius: 5px;
+    background: #1D3557;
+}
+  
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #0d1522;
+    border-radius: 5px;
+}
+  
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+input[type='range']::-webkit-slider-thumb {
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #4A90E2; /* Cor da bola */
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid #FFFFFF; /* Adiciona uma borda branca */
 }

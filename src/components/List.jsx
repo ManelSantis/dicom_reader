@@ -14,6 +14,7 @@ export const List = () => {
         const fetchData = async () => {
             try {
                 const data = await getArchiveByAnimal(archive_animal);
+                console.log(data);
                 setArchiveData(data);
             } catch (error) {
                 console.error('Erro ao buscar dados:', error);
@@ -74,7 +75,7 @@ export const List = () => {
                                 id={item.archive_id}
                                 name={item.archive_name}
                                 date={item.archive_date}
-                                countImages={0} 
+                                countImages={item.quantimage} 
                                 animal={archive_animal}
                                 local={item.archive_local }/>
                         ))}
