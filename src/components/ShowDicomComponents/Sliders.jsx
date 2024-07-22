@@ -25,7 +25,7 @@ export const Sliders = () => {
                     value={sliderGama}
                     step="0.01"
                     min="0"
-                    max="1"
+                    max="0.65"
                     onChange={handleSliderGamaChange}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-4"
                 />
@@ -40,9 +40,9 @@ export const Sliders = () => {
                     id="sharpness"
                     type="range"
                     value={sliderSharpness}
-                    step="0.1"
-                    min="0.4"
-                    max="5"
+                    step="0.01"
+                    min="0"
+                    max="2.5"
                     onChange={handleSliderSharpnessChange}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-4"
                 />

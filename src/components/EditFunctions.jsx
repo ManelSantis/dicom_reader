@@ -5,6 +5,7 @@ import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import hammer from 'hammerjs';
 import { uploadArrayBuffer } from '../firebase/firebase.js';
+import { addArchive, addImage, addNote } from '../services/SaveArchive.js';
 
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
@@ -23,8 +24,6 @@ cornerstoneTools.init(
         showSVGCursors: true,
     }
 );
-
-let isInitialized = false;
 
 export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage, setCurrentImage, setTotalImages, setHandleSave }) => {
 
@@ -56,7 +55,6 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     const title = document.getElementById('title');
     const type = document.getElementById('type');
     const part = document.getElementById('part');
-    const cancel = document.getElementById('cancel');
 
     let fileList;
     let currentImageId = 0;
@@ -69,14 +67,10 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
 
     const initialize = () => {
 
-        if (isInitialized) return;
-        isInitialized = true;
-
         const fileInput = document.getElementById("fileInput");
         fileInput.addEventListener('change', handleFileChange);
         typeSpecie.addEventListener('change', handleTypeChange);
         save.addEventListener('click', handleSaveClick);
-        cancel.addEventListener('click', handleCancelClick);
         osso.checked = true;
         pele.checked = true;
         orgao.checked = true;
@@ -84,6 +78,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     };
 
     const handleFileChange = (event) => {
+        console.log('adicionou')
         fileList = event.target.files;
         setTotalImages(fileList.length);
         cornerstone.enable(element);
@@ -106,8 +101,8 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         cornerstoneTools.addToolState(element, 'stack', stack);
 
         //Note Tool
-        //const apiTool = cornerstoneTools[`${note}Tool`];
-        //cornerstoneTools.addTool(apiTool);
+        const apiTool = cornerstoneTools[`${note}Tool`];
+        cornerstoneTools.addTool(apiTool);
         cornerstoneTools.toolColors.setToolColor('rgb(255, 255, 0)');
         cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 })
         ///////////
@@ -190,7 +185,6 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     const handleSaveClick = async (event) => {
 
         if (!title.value || !type.value || !part.value) {
-            alert('Por favor, preencha todos os campos obrigatórios.');
             setHandleSave([!title.value, !type.value, !part.value]);
             return;
         }
@@ -273,10 +267,6 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
             window.location.reload();
         }, 3000);
     };
-
-    const handleCancelClick = (event) => {
-        window.location.reload();
-    }
 
     async function uploadAndReadFile(element, number, past) {
         return new Promise((resolve, reject) => {
@@ -378,7 +368,6 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     }
 
     function saveByColor(color, imageId) {
-
         const currentState = cornerstoneTools.getToolState(element, note);
         if (currentState && currentState.data.length > 0) {
             for (const annotation of currentState.data) {
@@ -388,6 +377,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
             }
             annotations.states[imageId] = currentState.data;
         }
+        console.log(annotations.states[imageId])
     }
 
     const cleanup = () => {
@@ -399,14 +389,13 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
          setCurrentImage(0);
          setTotalImages(0);
          setHandleSave([false, false, false]);
-         isInitialized = false; // Reinicializa para próximo uso
+         //isInitialized = false; // Reinicializa para próximo uso
     };
 
     /////////////////////////////
 
     return {
-        initialize: initialize,
-        cleanup
+        initialize
     };
 };
 

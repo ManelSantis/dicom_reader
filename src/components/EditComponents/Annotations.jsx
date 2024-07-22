@@ -33,7 +33,7 @@ export const Annotations = () => {
                         <button title="Salvar" id="save" className="w-full text-[#F1FAEE] bg-[#457B9D] hover:bg-[#7db0cf] p-2 rounded disabled:opacity-50" disabled>
                             <i className="fa-solid fa-save fa-xl mr-2"></i> Salvar Arquivo
                         </button>
-                        <Link to="" className="w-full">
+                        <Link to="/" className="w-full">
                             <button
                                 title="Cancelar"
                                 id="cancel"

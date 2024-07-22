@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Annotations } from './EditComponents/Annotations';
 import { Editor } from "./EditComponents/Editor";
 import { ImagesCarousel } from "./EditComponents/EditorComponents/ImagesCarousel";
@@ -15,13 +15,13 @@ export const Edit = () => {
     const [currentImage, setCurrentImage] = useState(0);
     const [totalImages, setTotalImages] = useState(0);
     const [handleSave, setHandleSave] = useState([false, false, false]);
-    const [pageLoadTime, setPageLoadTime] = useState(Date.now());
-
+    const didMountRef = useRef(false);
+    
     useEffect(() => {
-        let editFunctions = null;
-        if (isAdmin && isLogin) {
+        if (didMountRef.current) return;
+        didMountRef.current = true;
 
-            editFunctions = EditFunctions({
+        EditFunctions({
                 setIsSaving,
                 setProgress,
                 setProgressMessage,
@@ -29,17 +29,9 @@ export const Edit = () => {
                 setCurrentImage,
                 setTotalImages,
                 setHandleSave,
-            });
-            editFunctions.initialize();
-            
-        }
+            }).initialize();
 
-        return () => {
-            if (editFunctions) {
-                editFunctions.cleanup();
-            }
-        };
-    }, [isAdmin, isLogin, pageLoadTime]);
+    }, []);
 
     useEffect(() => {
         function updateHeight() {
@@ -56,10 +48,6 @@ export const Edit = () => {
             window.removeEventListener('resize', updateHeight);
         };
     }, []);
-
-    if (!isLogin) {
-        return <div className="flex w-screen h-screen items-center justify-center bg-slate-700 text-white">Por favor, faça login para acessar o editor.</div>;
-    }
 
     return (
         <div style={{ height: newHeight + 'px' }} className="flex w-screen bg-slate-700">

@@ -13,9 +13,8 @@ cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
-//let isInitialized = false;
 
-export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIsLoading, setDicomData, setCurrentImage, setTotalImages, setPseudoColor) => {
+export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIsLoading, setDicomData, setCurrentImage, setTotalImages) => {
 
     let fileList;
     let imageListDownload;
@@ -23,6 +22,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     let originalPixels;
     let currentImageId = 0;
     const note = 'ArrowAnnotate';
+    
 
     const stack = { currentImageIdIndex: 0, imageIds: [], };
     const annotations = { currentImageId, imageIds: [], states: [] };
@@ -43,9 +43,9 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     document.getElementById('applyM1').addEventListener('click', () => applyMaskToAllImages('m1', 3));
     document.getElementById('applyM2').addEventListener('click', () => applyMaskToAllImages('m2', 3));
     document.getElementById('applyM3').addEventListener('click', () => applyMaskToAllImages('m3', 3));*/
-    document.getElementById('pseudo').addEventListener('click', () => applyPseudoColor() && setPseudoColor(true));
-    document.getElementById('sharpness').addEventListener('change', () => applySharpness(document.getElementById('sharpness').value));
-    document.getElementById('gama').addEventListener('change', () => applyGama(document.getElementById('gama').value));
+    document.getElementById('pseudo').addEventListener('click', () => applyPseudoColor());
+    document.getElementById('sharpness').addEventListener('change', () => applyEffects());
+    document.getElementById('gama').addEventListener('change', () => applyEffects());
 
     document.getElementById('reset').addEventListener('click', resetOriginalPixels);
     document.getElementById('show').addEventListener('click', () => getDicomData());
@@ -65,6 +65,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
             const promises = fileList.map(async (file, index) => {
                 const imageBlob = await getImageByPath(file.image_path);
+                setProgress((prev) => Math.min(prev + (90 / totalFiles), 90));
                 return imageBlob;
             });
 
@@ -74,10 +75,9 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
             imageBlobs.forEach(dcmData => {
                 const blob = new Blob([dcmData]);
-                setProgress((prev) => Math.min(prev + (100 / totalFiles), 100));
                 imageListDownload.add(blob);
             })
-            setIsLoading(false);
+
 
             imageList = Array.from(imageListDownload);
             originalPixels = Array.from(imageListDownload);
@@ -100,7 +100,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const apiTool = cornerstoneTools[`${note}Tool`];
             cornerstoneTools.addTool(apiTool);
 
-            cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 })
+            cornerstoneTools.setToolActive(note, { mouseButtonMask: null })
             updateImage(currentImageId);
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
@@ -159,15 +159,21 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const viewport = cornerstone.getDefaultViewportForImage(element, image);
             cornerstone.displayImage(element, image, viewport);
             loadAnnotations(currentImageId);
+            applyPseudoColor();
+            setCurrentImage(newImageId + 1);
+            setProgress(100);
+            setIsLoading(false);
         })
-        applyPseudoColor();
-        setCurrentImage(newImageId + 1);
+        
     }
 
     function loadAnnotations(imageId) {
+
         if (annotations.states[imageId]) {
             for (const annotation of annotations.states[imageId]) {
+                
                 cornerstoneTools.addToolState(element, note, annotation);
+                console.log( annotation.handles.textBox);
             }
         }
     }
@@ -878,7 +884,6 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const rows = dataSet.uint16('x00280010');
             const columns = dataSet.uint16('x00280011');
 
-
             canvas.width = columns;
             canvas.height = rows;
             const ctx = canvas.getContext('2d');
@@ -895,7 +900,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
             ctx.putImageData(imageData, 0, 0)
         }
-
+        
     }
 
     const pseudoColor = (value) => {
@@ -2703,11 +2708,57 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
         return [r, g, b];
     }
 
+    async function applyEffects() {
+
+        imageList = originalPixels.map(pixel => pixel.slice());
+
+        const sharpenLevel = document.getElementById('sharpness').value;
+        const brightnessLevel = document.getElementById('gama').value;
+
+        await applyGama(brightnessLevel);
+        await applySharpness(sharpenLevel);
+
+        updateImage(currentImageId);
+    }
+
+    //Filtro GAMA
+    const applyGama = async (gamaValue) => {
+        gamaValue = 1 - (gamaValue * 0.65);
+        if (gamaValue == 0) { return; }
+
+        for (let i = 0; i < imageList.length; i++) {
+            const dicomFileBuffer = await imageList[i].arrayBuffer();
+            const byteArray = new Uint8Array(dicomFileBuffer);
+            const dataSet = dicomParser.parseDicom(byteArray);
+            const pixelDataElement = dataSet.elements.x7fe00010;
+            const dataOffset = pixelDataElement.dataOffset;
+            const length = pixelDataElement.length;
+
+            const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
+            const filteredData = new Uint16Array(pixelData.length);
+
+            for (let i = 0; i < length; i ++) {
+                filteredData[i] = Math.pow(pixelData[i] / 255, gamaValue) * 255;
+            }
+
+            const newDicomBuffer = new ArrayBuffer(dicomFileBuffer.byteLength);
+            const newByteArray = new Uint8Array(newDicomBuffer);
+            newByteArray.set(byteArray);
+            const newPixelDataArray = new Uint16Array(newDicomBuffer, dataOffset, length / 2);
+            newPixelDataArray.set(filteredData);
+
+            const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
+            imageList[i] = newBlob;
+        }
+        
+    };
+
     //Filtro NITIDEZ
     const applySharpness = async (value) => {
-        imageList = originalPixels.map(pixel => pixel.slice());
+
+        if (value == 0) { return; }
+
         for (let i = 0; i < imageList.length; i++) {
-            if (value == 0.4) { break; }
             const dicomFileBuffer = await imageList[i].arrayBuffer();
             const byteArray = new Uint8Array(dicomFileBuffer);
             const dataSet = dicomParser.parseDicom(byteArray);
@@ -2722,9 +2773,17 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const size = 3;
 
             const halfSize = Math.floor(size / 2);
-            const mask = [0, -1 * value, 0,
-                -1 * value, 5 * value, -1 * value,
-                0, -1 * value, 0];
+            const maskOriginal = [0, -1, 0,
+                -1 , 5, -1 ,
+                0, -1, 0];
+
+            const mask = maskOriginal.map(x => {
+                if (x === 5) {
+                    return 1 + 4 * value;
+                } else {
+                    return x * value;
+                }
+            });
 
             for (let r = halfSize; r < rows - halfSize; r++) {
                 for (let c = halfSize; c < columns - halfSize; c++) {
@@ -2767,40 +2826,6 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
             imageList[i] = newBlob;
         }
-        updateImage(currentImageId);
-    };
-
-    //Filtro GAMA
-    const applyGama = async (gamaValue) => {
-        imageList = originalPixels.map(pixel => pixel.slice());
-        for (let i = 0; i < imageList.length; i++) {
-            if (gamaValue == 0) { break; }
-            const dicomFileBuffer = await imageList[i].arrayBuffer();
-            const byteArray = new Uint8Array(dicomFileBuffer);
-            const dataSet = dicomParser.parseDicom(byteArray);
-            const pixelDataElement = dataSet.elements.x7fe00010;
-            const dataOffset = pixelDataElement.dataOffset;
-            const length = pixelDataElement.length;
-
-            const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
-            const rows = dataSet.uint16('x00280010');
-            const columns = dataSet.uint16('x00280011');
-            const filteredData = new Uint16Array(pixelData.length);
-
-            for (let i = 0; i < length; i ++) {
-                filteredData[i] = Math.pow(pixelData[i] / 255, gamaValue) * 255;
-            }
-
-            const newDicomBuffer = new ArrayBuffer(dicomFileBuffer.byteLength);
-            const newByteArray = new Uint8Array(newDicomBuffer);
-            newByteArray.set(byteArray);
-            const newPixelDataArray = new Uint16Array(newDicomBuffer, dataOffset, length / 2);
-            newPixelDataArray.set(filteredData);
-
-            const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
-            imageList[i] = newBlob;
-        }
-        updateImage(currentImageId);
     };
 
     //Função geral para as Máscaras

@@ -28,12 +28,13 @@ export const Navbar = () => {
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('token'); 
         setAdmin(false);
         setLogin(false);
     };
 
     return (
-        <nav className='bg-[#1D3557] w-full border-b-[0.5px] border-white flex items-center relative'>
+        <nav className='bg-[#1D3557] w-full border-b-[0.5px] border-white flex items-center relative z-10'>
             <div className="max-w-screen-xl px-4 py-[0.70rem] mx-auto flex justify-center w-full relative">
                 <div className="absolute left-0 text-[#F1FAEE] text-lg font-[600]">Atlas Radiográfico AniSC</div>
                 <div className="flex font-semibold items-center space-x-8 text-lg">

@@ -1,23 +1,56 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../services/Authentication.js';
 import { useLogin } from './LoginProvider';
 
 export const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const { setAdmin, setLogin } = useLogin();
+    const [newHeight, setNewHeight] = useState(0);
+    const [errorMessage, setErrorMessage] = useState('');
+    const { setAdmin, setLogin, isLogin } = useLogin();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    useEffect(() => {
+        if (isLogin) {
+            navigate('/'); 
+        }
+    }, [isLogin, navigate]);
+
+    useEffect(() => {
+        function updateHeight() {
+            const navbarHeight = document.querySelector('nav').offsetHeight;
+            const windowHeight = window.innerHeight;
+            const calculatedHeight = windowHeight - navbarHeight;
+            setNewHeight(calculatedHeight);
+        }
+
+        window.addEventListener('resize', updateHeight);
+
+        updateHeight();
+
+        return () => window.removeEventListener('resize', updateHeight);
+
+    }, []);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setAdmin(true);
-        setLogin(true);
-        navigate('/'); // Redireciona para a página inicial após login
+        try {
+            await login(username, password);
+            setAdmin(true); 
+            setLogin(true);
+            navigate('/'); 
+        } catch (error) {
+            setErrorMessage('Erro ao fazer login: Usuário ou senha incorretos.');
+            setAdmin(false); 
+            setLogin(false);
+            console.error('Erro ao fazer login:', error.message);
+        }
     };
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-            <div className='w-[40%] h-[350px] rounded-lg flex flex-col bg-white items-center justify-center p-4 space-y-4'>
+        <div style={{ height: newHeight + 'px' }} className="inset-0 flex items-center justify-center bg-[#8b8b8b] bg-opacity-80">
+            <div className='border-blur w-[40%] h-[400px] rounded-lg flex flex-col bg-white items-center justify-center p-4 space-y-4'>
                 <div className='flex font-semibold text-[20px]'>
                     Bem Vindo(a)
                 </div>
@@ -46,8 +79,13 @@ export const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
+                    {errorMessage && (
+                        <div className='text-red-500'>
+                            {errorMessage}
+                        </div>
+                    )}
                     <div className='flex p-4 space-x-24'>
-                        <button type="submit" className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-12 py-2 mb-2 mt-2 focus:outline-none'>Logar</button>
+                        <button type="submit" className=' text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-12 py-2 mb-2 mt-2 focus:outline-none'>Logar</button>
                     </div>
                 </form>
             </div>
