@@ -14,7 +14,7 @@ cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
 
-export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIsLoading, setDicomData, setCurrentImage, setTotalImages) => {
+export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIsLoading, setDicomData, setCurrentImage, setTotalImages, setPseudoColor) => {
 
     let fileList;
     let imageListDownload;
@@ -22,7 +22,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     let originalPixels;
     let currentImageId = 0;
     const note = 'ArrowAnnotate';
-    
+    let currentPseudo = false;
 
     const stack = { currentImageIdIndex: 0, imageIds: [], };
     const annotations = { currentImageId, imageIds: [], states: [] };
@@ -870,9 +870,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
     //Filtro PSEUDOCOR
     const applyPseudoColor = async () => {
-        const canvas = document.getElementById('canvas');
-
-        if (canvas != null) {
+            const canvas = document.getElementById('canvas');
             const dicomFileBuffer = await imageList[currentImageId].arrayBuffer();
             const byteArray = new Uint8Array(dicomFileBuffer);
             const dataSet = dicomParser.parseDicom(byteArray);
@@ -899,7 +897,6 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             }
 
             ctx.putImageData(imageData, 0, 0)
-        }
         
     }
 

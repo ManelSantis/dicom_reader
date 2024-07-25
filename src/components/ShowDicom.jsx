@@ -52,13 +52,16 @@ export const ShowDicom = () => {
             setIsLoading,
             setDicomData,
             setCurrentImage,
-            setTotalImages).initialize();
+            setTotalImages,
+            setPseudoColor).initialize();
 
     }, [archive_id]);
 
     return (
         <>
-            {pseudoColor && <ResizableDraggableDiv />}
+            {pseudoColor && (
+                <ResizableDraggableDiv />
+            )}
             <div style={{ height: newHeight + 'px' }} className="flex w-full items-center bg-black" onContextMenu={() => false}>
                 <div className='w-[80%] h-full'>
                     <div id="dicomImage" className="w-full h-[90%] bg-black"> </div>

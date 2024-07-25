@@ -19,6 +19,7 @@ export const ResizableDraggableDiv = () => {
                 borderRadius: '8px', // Rounded corners
                 boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', // Shadow effect
               }}
+            
         >
             <canvas id="canvas" style={{ width: '100%', height: '100%' }}></canvas>
         </Rnd>

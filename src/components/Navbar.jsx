@@ -34,14 +34,21 @@ export const Navbar = () => {
     };
 
     return (
-        <nav className='bg-[#1D3557] w-full border-b-[0.5px] border-white flex items-center relative z-10'>
-            <div className="max-w-screen-xl px-4 py-[0.70rem] mx-auto flex justify-center w-full relative">
-                <div className="absolute left-0 text-[#F1FAEE] text-lg font-[600]">Atlas Radiográfico AniSC</div>
-                <div className="flex font-semibold items-center space-x-8 text-lg">
+        <nav className='bg-[#1D3557] w-full border-b border-white flex items-center'>
+            <div className="max-w-screen-xl px-4 py-2 mx-auto flex items-center justify-between w-full relative">
+                {/* Logo */}
+                <div className="text-[#F1FAEE] text-lg font-bold hidden lg:block">
+                    Atlas Radiográfico AniSC
+                </div>
+
+                {/* Navigation Links */}
+                <div className="flex items-center space-x-4 lg:space-x-8 text-lg font-semibold">
                     <Link className='text-[#F1FAEE] hover:underline' to='/'>Home</Link>
                     {isAdmin && <Link className='text-[#F1FAEE] hover:underline' to='/edit'>Editor</Link>}
                     <Link className='text-[#F1FAEE] hover:underline' to='list/canino'>Canino</Link>
                     <Link className='text-[#F1FAEE] hover:underline' to='list/felino'>Felino</Link>
+
+                    {/* Dropdown Menu */}
                     <div className='relative' onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                         <Link className='text-[#F1FAEE] hover:underline' to='#'>Silvestre</Link>
                         {isDropdownVisible && (
@@ -52,13 +59,23 @@ export const Navbar = () => {
                             </div>
                         )}
                     </div>
-                    <div className="absolute right-0 text-[#F1FAEE] text-lg font-[600]">
-                        {isLogin ? (
-                            <button onClick={handleLogout} className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-8 py-2 mb-2 mt-2 focus:outline-none'>Logout</button>
-                        ) : (
-                            <button onClick={handleLoginClick} className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-8 py-2 mb-2 mt-2 focus:outline-none'>Login</button>
-                        )}
-                    </div>
+                </div>
+
+                {/* Authentication Button */}
+                <div className="flex items-center">
+                    {isLogin ? (
+                        <button 
+                            onClick={handleLogout} 
+                            className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-8 py-2'>
+                            Logout
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handleLoginClick} 
+                            className='text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-8 py-2'>
+                            Login
+                        </button>
+                    )}
                 </div>
             </div>
         </nav>

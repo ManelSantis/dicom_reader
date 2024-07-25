@@ -32,7 +32,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     let contrast = document.getElementById('contrast');
     let zoom = document.getElementById('zoom')
     let rotate = document.getElementById('rotate');*/
-    let currentColor = "yellow";
+    let currentColor = "cyan";
     const note = 'ArrowAnnotate';
 
     //Checkboxes
@@ -103,7 +103,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         //Note Tool
         const apiTool = cornerstoneTools[`${note}Tool`];
         cornerstoneTools.addTool(apiTool);
-        cornerstoneTools.toolColors.setToolColor('rgb(255, 255, 0)');
+        cornerstoneTools.toolColors.setToolColor('rgb(0, 255, 255)');
         cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 })
         ///////////
 
@@ -154,23 +154,23 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         switch (selectedType) {
             case "ossos":
                 saveByColor(currentColor, currentImageId);
-                currentColor = "yellow";
-                cornerstoneTools.toolColors.setToolColor('rgb(255, 255, 0)');
+                currentColor = "cyan";
+                cornerstoneTools.toolColors.setToolColor('rgb(0, 255, 255)');
                 break;
             case "pele":
                 saveByColor(currentColor, currentImageId);
-                currentColor = "purple";
-                cornerstoneTools.toolColors.setToolColor('rgb(128, 0, 128)');
+                currentColor = "lightcoral";
+                cornerstoneTools.toolColors.setToolColor('rgb(240, 128, 128)');
                 break;
             case "orgao":
                 saveByColor(currentColor, currentImageId);
-                currentColor = "green";
-                cornerstoneTools.toolColors.setToolColor('rgb(0, 128, 0)');
+                currentColor = "lime";
+                cornerstoneTools.toolColors.setToolColor('rgb(0, 255, 0)');
                 break;
             case "perigo":
                 saveByColor(currentColor, currentImageId);
-                currentColor = "red";
-                cornerstoneTools.toolColors.setToolColor('rgb(255,0, 0)');
+                currentColor = "gold";
+                cornerstoneTools.toolColors.setToolColor('rgb(255,215, 0)');
                 break;
         }
         const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(fileList[currentImageId]);
@@ -322,13 +322,13 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     }
 
     //Evento para a cor amarela
-    osso.addEventListener('change', function () { handleVisibilityChange(osso, 'yellow', optionOssos); });
+    osso.addEventListener('change', function () { handleVisibilityChange(osso, 'cyan', optionOssos); });
     //Evento para a cor roxa
-    pele.addEventListener('change', function () { handleVisibilityChange(pele, 'purple', optionPele); });
+    pele.addEventListener('change', function () { handleVisibilityChange(pele, 'lightcoral', optionPele); });
     //Evento para a cor verde
-    orgao.addEventListener('change', function () { handleVisibilityChange(orgao, 'green', optionOrgao); });
+    orgao.addEventListener('change', function () { handleVisibilityChange(orgao, 'lime', optionOrgao); });
     //Evento para a cor vermelha
-    perigo.addEventListener('change', function () { handleVisibilityChange(perigo, 'red', optionPerigo); });
+    perigo.addEventListener('change', function () { handleVisibilityChange(perigo, 'gold', optionPerigo); });
 
     //Função para editar a visibilidade
     function editVisibility(color, visible) {
