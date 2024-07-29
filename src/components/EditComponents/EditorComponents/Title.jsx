@@ -8,7 +8,7 @@ export const Title = ({ handleSave }) => {
     }, [handleSave]);
 
     return (
-        <div className="w-full h-auto lg:h-[15%] bg-[#F1FAEE] font-semibold font-[600] text-[#1D3557]">
+        <div className="w-full h-auto lg:h-[15%] bg-[#F1FAEE] font-semibold text-[#1D3557]">
             <div className="w-full h-auto lg:h-[50%] pt-2 flex justify-center">
                 <div className="w-full px-4 lg:px-0">
                     <input
