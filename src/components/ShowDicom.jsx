@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { ShowAnnotationsTable } from "./EditComponents/AnnotationsComponents/ShowAnnotationsTable";
 import { ImagesCarousel } from "./EditComponents/EditorComponents/ImagesCarousel";
 import { ResizableDraggableDiv } from './ShowDicomComponents/ResizableDraggableDiv';
 import { Sliders } from './ShowDicomComponents/Sliders';
@@ -61,7 +62,7 @@ export const ShowDicom = () => {
         <>
             {pseudoColor && (
                 <ResizableDraggableDiv />
-            )}
+            )} 
             <div style={{ height: newHeight + 'px' }} className="flex w-full items-center bg-black" onContextMenu={() => false}>
                 <div className='w-[80%] h-full'>
                     <div id="dicomImage" className="w-full h-[90%] bg-black"> </div>
@@ -74,9 +75,13 @@ export const ShowDicom = () => {
                         </span>
                     </div>
                     <Sliders />
+                    <div className="w-full flex flex-col justify-center items-center p-4 space-y-4">
+                    <h1 className="text-[#F1FAEE] text-[18px] sm:text-[22px] lg:text-[24px] font-bold">Exibir Anotações</h1>
+                    <ShowAnnotationsTable />
+                    </div>
                     <div className="w-full flex flex-col bg-[#457B9D] text-[#F1FAEE] font-semibold p-4 space-y-2">
                         <button
-                            className="w-full flex items-center justify-center hover:bg-[#7db0cf] mb-4 p-2 rounded"
+                            className="w-full flex items-center justify-center hover:bg-[#7db0cf] mb-0 p-2 rounded"
                             id="pseudo"
                             onClick={togglePseudoColor}
                         >

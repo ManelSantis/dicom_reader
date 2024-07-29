@@ -18,6 +18,7 @@ export const ResizableDraggableDiv = () => {
                 border: '2px solid #4A90E2', // Stylish border color
                 borderRadius: '8px', // Rounded corners
                 boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', // Shadow effect
+                zIndex: 20
               }}
             
         >

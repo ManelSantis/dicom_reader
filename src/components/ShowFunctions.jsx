@@ -24,6 +24,12 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     const note = 'ArrowAnnotate';
     let currentPseudo = false;
 
+    //Checkboxes
+    const osso = document.getElementById('osso');
+    const orgao = document.getElementById("orgao");
+    const pele = document.getElementById("pele");
+    const perigo = document.getElementById("perigo");
+
     const stack = { currentImageIdIndex: 0, imageIds: [], };
     const annotations = { currentImageId, imageIds: [], states: [] };
 
@@ -57,6 +63,10 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             setIsLoading(true);
             setProgressMessage('Carregando imagens...');
             setProgress(0);
+            osso.checked = true;
+            pele.checked = true;
+            orgao.checked = true;
+            perigo.checked = true;
 
             fileList = await fetchData();
             const totalFiles = fileList.length;
@@ -164,16 +174,13 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             setProgress(100);
             setIsLoading(false);
         })
-        
+
     }
 
     function loadAnnotations(imageId) {
-
         if (annotations.states[imageId]) {
             for (const annotation of annotations.states[imageId]) {
-                
                 cornerstoneTools.addToolState(element, note, annotation);
-                console.log( annotation.handles.textBox);
             }
         }
     }
@@ -870,34 +877,34 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
     //Filtro PSEUDOCOR
     const applyPseudoColor = async () => {
-            const canvas = document.getElementById('canvas');
-            const dicomFileBuffer = await imageList[currentImageId].arrayBuffer();
-            const byteArray = new Uint8Array(dicomFileBuffer);
-            const dataSet = dicomParser.parseDicom(byteArray);
-            const pixelDataElement = dataSet.elements.x7fe00010;
-            const dataOffset = pixelDataElement.dataOffset;
-            const length = pixelDataElement.length;
+        const canvas = document.getElementById('canvas');
+        const dicomFileBuffer = await imageList[currentImageId].arrayBuffer();
+        const byteArray = new Uint8Array(dicomFileBuffer);
+        const dataSet = dicomParser.parseDicom(byteArray);
+        const pixelDataElement = dataSet.elements.x7fe00010;
+        const dataOffset = pixelDataElement.dataOffset;
+        const length = pixelDataElement.length;
 
-            const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
-            const rows = dataSet.uint16('x00280010');
-            const columns = dataSet.uint16('x00280011');
+        const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
+        const rows = dataSet.uint16('x00280010');
+        const columns = dataSet.uint16('x00280011');
 
-            canvas.width = columns;
-            canvas.height = rows;
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.createImageData(columns, rows);
+        canvas.width = columns;
+        canvas.height = rows;
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.createImageData(columns, rows);
 
-            for (let i = 0; i < pixelData.length; i++) {
-                const pixel = pixelData[i];
-                const [r, g, b] = pseudoColor(pixel)
-                imageData.data[i * 4] = r;
-                imageData.data[i * 4 + 1] = g;
-                imageData.data[i * 4 + 2] = b;
-                imageData.data[i * 4 + 3] = 255;
-            }
+        for (let i = 0; i < pixelData.length; i++) {
+            const pixel = pixelData[i];
+            const [r, g, b] = pseudoColor(pixel)
+            imageData.data[i * 4] = r;
+            imageData.data[i * 4 + 1] = g;
+            imageData.data[i * 4 + 2] = b;
+            imageData.data[i * 4 + 3] = 255;
+        }
 
-            ctx.putImageData(imageData, 0, 0)
-        
+        ctx.putImageData(imageData, 0, 0)
+
     }
 
     const pseudoColor = (value) => {
@@ -2734,7 +2741,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
             const filteredData = new Uint16Array(pixelData.length);
 
-            for (let i = 0; i < length; i ++) {
+            for (let i = 0; i < length; i++) {
                 filteredData[i] = Math.pow(pixelData[i] / 255, gamaValue) * 255;
             }
 
@@ -2747,8 +2754,42 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
             imageList[i] = newBlob;
         }
-        
+
     };
+
+    /////////////////////////////
+    //Função genérica para eventos de visibilidade das anotações
+    function handleVisibilityChange(colorCheckbox, color) {
+        editVisibility(color, colorCheckbox.checked);
+
+        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(imageList[currentImageId]);
+        cornerstone.loadImage(imageId).then(function (image) {
+            const viewport = cornerstone.getDefaultViewportForImage(element, image);
+            cornerstone.displayImage(element, image, viewport);
+            loadAnnotations(currentImageId);
+        });
+    }
+
+    //Evento para a cor amarela
+    osso.addEventListener('change', function () { handleVisibilityChange(osso, 'cyan'); });
+    //Evento para a cor roxa
+    pele.addEventListener('change', function () { handleVisibilityChange(pele, 'lightcoral'); });
+    //Evento para a cor verde
+    orgao.addEventListener('change', function () { handleVisibilityChange(orgao, 'lime'); });
+    //Evento para a cor vermelha
+    perigo.addEventListener('change', function () { handleVisibilityChange(perigo, 'gold'); });
+
+    //Função para editar a visibilidade
+    function editVisibility(color, visible) {
+        for (const element of annotations.states) {
+            for (const annotation of element) {
+                if (annotation.color == color) {
+                    annotation.visible = visible;
+                }
+            }
+        }
+    }
+    /////////////////////////////
 
     //Filtro NITIDEZ
     const applySharpness = async (value) => {
@@ -2771,7 +2812,7 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
             const halfSize = Math.floor(size / 2);
             const maskOriginal = [0, -1, 0,
-                -1 , 5, -1 ,
+                -1, 5, -1,
                 0, -1, 0];
 
             const mask = maskOriginal.map(x => {
