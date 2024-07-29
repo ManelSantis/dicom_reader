@@ -52,7 +52,7 @@ export const Navbar = () => {
                     <div className='relative' onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                         <Link className='text-[#F1FAEE] hover:underline' to='#'>Silvestre</Link>
                         {isDropdownVisible && (
-                            <div className='absolute bg-[#1D3557] mt-2 py-2 w-48 border border-black'>
+                            <div className='absolute bg-[#1D3557] mt-2 py-2 w-48 border border-black z-40'>
                                 <Link className='block px-4 py-2 text-[#F1FAEE] hover:bg-[#457B9D]' to='list/cateto' onClick={handleLinkClick}>Cateto</Link>
                                 <Link className='block px-4 py-2 text-[#F1FAEE] hover:bg-[#457B9D]' to='list/cutia' onClick={handleLinkClick}>Cutia</Link>
                                 <Link className='block px-4 py-2 text-[#F1FAEE] hover:bg-[#457B9D]' to='list/moco' onClick={handleLinkClick}>Mocó</Link>
