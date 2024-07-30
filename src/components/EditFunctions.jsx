@@ -190,7 +190,7 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         }
 
         setHandleSave([true, true, true]);
-
+        saveByColor(currentColor, currentImageId);
         setIsSaving(true);
         setProgressMessage('Criando arquivo..')
         setProgress(0);
