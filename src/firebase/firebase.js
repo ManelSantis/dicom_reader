@@ -10,13 +10,12 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyA8zPhFS2DfkwzOP3pGVSlV9XNl1zjNN_A",
-  authDomain: "atlas-dicom-reader.firebaseapp.com",
-  projectId: "atlas-dicom-reader",
-  storageBucket: "atlas-dicom-reader.appspot.com",
-  messagingSenderId: "52802975342",
-  appId: "1:52802975342:web:49200f647911c17d98987f",
-  measurementId: "G-1T4QEKXYHJ"
+    apiKey: "AIzaSyDQEN8QsepWZYb8eKV6ilWOTwVlUYe39n4",
+    authDomain: "atlas-radiografico-reader.firebaseapp.com",
+    projectId: "atlas-radiografico-reader",
+    storageBucket: "atlas-radiografico-reader.appspot.com",
+    messagingSenderId: "837550839679",
+    appId: "1:837550839679:web:44257a233311ec8f742c4a"
 };
 
 // Initialize Firebase

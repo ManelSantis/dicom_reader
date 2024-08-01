@@ -1,5 +1,10 @@
 {
   "projects": {
-    "default": "atlas-dicom-reader"
-  }
+    "default": "atlas-radiografico-reader",
+    "atlas-radiografico": "atlas-radiografico",
+    "atlas-radiografico-reader": "atlas-radiografico-reader"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
 }
