@@ -1,4 +1,4 @@
-const dataBaseURL = 'http://localhost:3000/';
+const dataBaseURL = 'https://dicom-reader-backend.onrender.com/';
 
 export default {
     dataBaseURL,
