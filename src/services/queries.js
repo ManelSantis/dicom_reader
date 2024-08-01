@@ -1,4 +1,4 @@
-const dataBaseURL = 'https://atlas-radiografico-backend.onrender.com/';
+const dataBaseURL = 'http://localhost:3000/';
 
 export default {
     dataBaseURL,
