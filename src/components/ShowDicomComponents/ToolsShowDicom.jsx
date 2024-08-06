@@ -71,7 +71,7 @@ export const ToolsShowDicom = ({ onSave }) => {
     return (
         <aside className="h-full w-full sm:w-[40%] lg:w-[30%] xl:w-[20%] flex flex-col bg-white border-l-2 border-gray-400">
             <Box role="presentation">
-                <label htmlFor="" className="flex block b-2 text-lg items-center justify-center font-bold p-4 text-gray-900"> Anotações </label>
+                <label htmlFor="" className="flex b-2 text-lg items-center justify-center font-bold p-4 text-gray-900"> Anotações </label>
                 <label htmlFor="typeSpecie" className="block b-2 text-sm font-medium p-4 text-gray-900">Selecione uma Anotação</label>
                 <select
                     id="typeSpecie"
