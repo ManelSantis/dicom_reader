@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { colorNames } from '../ColorArrays';
 import ColorSelect from './ColorSelect';
 
-export const Annotations = ({ onSave }) => {
+export const ToolsShowDicom = ({ onSave }) => {
     const [open, setOpen] = useState(false);
     const [annotationName, setAnnotationName] = useState('');
     const [annotationColor, setAnnotationColor] = useState('');
@@ -50,6 +50,7 @@ export const Annotations = ({ onSave }) => {
             onSave(newAnnotation);
         }
         setAnnotationName('');
+        setAnnotationColor(getRandomAvailableColor());
         setError('');
         setOpen(false);
     };

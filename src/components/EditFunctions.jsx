@@ -6,6 +6,7 @@ import dicomParser from 'dicom-parser';
 import hammer from 'hammerjs';
 import { uploadArrayBuffer } from '../firebase/firebase.js';
 import { addArchive, addImage, addNote } from '../services/SaveArchive.js';
+import { colorNames, rgbColors } from './ColorArrays.jsx';
 
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
@@ -14,84 +15,59 @@ cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
 
-//const WwwcTool = cornerstoneTools.WwwcTool;
-//const PanTool = cornerstoneTools.PanTool;
-//const RotateTool = cornerstoneTools.RotateTool;
-//const ZoomTool = cornerstoneTools.ZoomTool;
-
 cornerstoneTools.init(
     {
         showSVGCursors: true,
     }
 );
 
-export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage, setCurrentImage, setTotalImages, setHandleSave }) => {
+let nameSwitchs = ["Osso", "Órgão"];
+let colorsImplanted = ["cyan", "lightcoral"];
+let typeAnnotationsImplanted = ["osso", "orgao"];
+let idSwitchs = ["ossoSwitch", "orgaoSwitch"];
 
-    //TOOLBOX TOOLS
-    /*let move = document.getElementById('move');
-    let contrast = document.getElementById('contrast');
-    let zoom = document.getElementById('zoom')
-    let rotate = document.getElementById('rotate');*/
-    let currentColor = "cyan";
-    const note = 'ArrowAnnotate';
+const state = {
+    fileList: null,
+    currentImageId: 0,
+    currentColor: "cyan",
+};
 
-    //Checkboxes
-    const osso = document.getElementById('osso');
-    const orgao = document.getElementById("orgao");
-    const pele = document.getElementById("pele");
-    const perigo = document.getElementById("perigo");
+const annotations = { currentImageId: state.currentImageId, imageIds: [], states: [] };
+const note = 'ArrowAnnotate';
+let element = document.getElementById('dicomImage');
+
+export const EditFunctions = ({ setCurrentImage, setTotalImages, setIsDisabled }) => {
 
     //Select de anotações
     const typeSpecie = document.getElementById('typeSpecie');
-    let optionOssos = typeSpecie.querySelector('option[value="ossos"]');
-    let optionPele = typeSpecie.querySelector('option[value="pele"]');
-    let optionOrgao = typeSpecie.querySelector('option[value="orgao"]');
-    let optionPerigo = typeSpecie.querySelector('option[value="perigo"]');
-
-    //const tools = [move, contrast, zoom, rotate];
-
-    //Save Tools
-    const save = document.getElementById('save');
-    const title = document.getElementById('title');
-    const type = document.getElementById('type');
-    const part = document.getElementById('part');
-
-    let fileList;
-    let currentImageId = 0;
-    //let currentTool = "move";
-
+    const divSwitchsAnnotations = document.getElementById('switchsAnnotations');
+    const cancel = document.getElementById('cancel');
+    element = document.getElementById('dicomImage');
     const stack = { currentImageIdIndex: 0, imageIds: [], };
-    const annotations = { currentImageId, imageIds: [], states: [] };
-
-    let element = document.getElementById('dicomImage');
 
     const initialize = () => {
-
         const fileInput = document.getElementById("fileInput");
         fileInput.addEventListener('change', handleFileChange);
         typeSpecie.addEventListener('change', handleTypeChange);
-        save.addEventListener('click', handleSaveClick);
-        osso.checked = true;
-        pele.checked = true;
-        orgao.checked = true;
-        perigo.checked = true;
+        cancel.addEventListener('click', handleCancelClick);
+        divSwitchsAnnotations.addEventListener('click', addSwitchEventListeners);
     };
 
     const handleFileChange = (event) => {
         console.log('adicionou')
-        fileList = event.target.files;
-        setTotalImages(fileList.length);
+        state.fileList = event.target.files;
+        setTotalImages(state.fileList.length);
         cornerstone.enable(element);
 
         element.addEventListener('wheel', handleMouseWheel);
-        console.log(fileList);
-        save.disabled = false;
+        console.log(state.fileList);
+        setIsDisabled(false);
 
-        currentImageId = 0;
+        state.currentImageId = 0;
         stack.imageIds = [];
         annotations.imageIds = [];
 
-        for (let i = 0; i < fileList.length; i++) {
+        for (let i = 0; i < state.fileList.length; i++) {
             stack.imageIds.push(i);
             annotations.imageIds.push(i);
             annotations.states.push([]);
@@ -104,231 +80,92 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
         const apiTool = cornerstoneTools[`${note}Tool`];
         cornerstoneTools.addTool(apiTool);
         cornerstoneTools.toolColors.setToolColor('rgb(0, 255, 255)');
-        cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 })
+        cornerstoneTools.setToolActive(note, { mouseButtonMask: 2 });
         ///////////
 
-        //Adicionando as Ferramentas no Elemento
-        /*cornerstoneTools.addTool(PanTool)
-        cornerstoneTools.addTool(WwwcTool)
-        cornerstoneTools.addTool(cornerstoneTools.ZoomTool, {
-            configuration: {
-                invert: false,
-                preventZoomOutsideImage: false,
-                minScale: .1,
-                maxScale: 30.0,
-            }
-        });
-        cornerstoneTools.addTool(RotateTool)
-        cornerstoneTools.setToolActive("Pan", { mouseButtonMask: 1 })*/
-
-        updateImage(currentImageId);
+        updateImage(state.currentImageId);
     };
 
     const handleMouseWheel = (event) => {
-        if (fileList.length === 0) return
-        saveByColor(currentColor, currentImageId);
-        if (currentImageId >= 0 && currentImageId < fileList.length) {
+        if (state.fileList.length === 0) return;
+        saveByColor(state.currentColor, state.currentImageId);
+        if (state.currentImageId >= 0 && state.currentImageId < state.fileList.length) {
             if (event.wheelDelta < 0 || event.detail > 0) {
-                if (currentImageId > 0) {
-                    currentImageId--;
+                if (state.currentImageId > 0) {
+                    state.currentImageId--;
                 }
             } else {
-                if (currentImageId < fileList.length - 1 && currentImageId >= 0) {
-                    currentImageId++;
+                if (state.currentImageId < state.fileList.length - 1 && state.currentImageId >= 0) {
+                    state.currentImageId++;
                 }
             }
         } else {
-            if (currentImageId < 0) {
-                currentImageId = 0;
+            if (state.currentImageId < 0) {
+                state.currentImageId = 0;
             }
 
-            if (currentImageId == fileList.length) {
-                currentImageId = fileList.length - 1;
+            if (state.currentImageId == state.fileList.length) {
+                state.currentImageId = state.fileList.length - 1;
             }
         }
-        updateImage(currentImageId);
+        updateImage(state.currentImageId);
     };
 
     const handleTypeChange = (event) => {
         const selectedType = event.target.value;
-        switch (selectedType) {
-            case "ossos":
-                saveByColor(currentColor, currentImageId);
-                currentColor = "cyan";
-                cornerstoneTools.toolColors.setToolColor('rgb(0, 255, 255)');
-                break;
-            case "pele":
-                saveByColor(currentColor, currentImageId);
-                currentColor = "lightcoral";
-                cornerstoneTools.toolColors.setToolColor('rgb(240, 128, 128)');
-                break;
-            case "orgao":
-                saveByColor(currentColor, currentImageId);
-                currentColor = "lime";
-                cornerstoneTools.toolColors.setToolColor('rgb(0, 255, 0)');
-                break;
-            case "perigo":
-                saveByColor(currentColor, currentImageId);
-                currentColor = "gold";
-                cornerstoneTools.toolColors.setToolColor('rgb(255,215, 0)');
-                break;
-        }
-        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(fileList[currentImageId]);
+        const index = typeAnnotationsImplanted.indexOf(selectedType);
+        const newColor = colorsImplanted[index];
+        const generalIndex = colorNames.indexOf(newColor);
+        const rgbNewColor = rgbColors[generalIndex];
+
+        saveByColor(state.currentColor, state.currentImageId);
+        state.currentColor = newColor;
+        cornerstoneTools.toolColors.setToolColor(rgbNewColor);
+
+        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(state.fileList[state.currentImageId]);
 
         cornerstone.loadImage(imageId).then(function (image) {
             const viewport = cornerstone.getDefaultViewportForImage(element, image);
             cornerstone.displayImage(element, image, viewport);
-            loadAnnotations(currentImageId);
+            loadAnnotations(state.currentImageId);
         });
-    }
-
-    const handleSaveClick = async (event) => {
-
-        if (!title.value || !type.value || !part.value) {
-            setHandleSave([!title.value, !type.value, !part.value]);
-            return;
-        }
-
-        setHandleSave([true, true, true]);
-        saveByColor(currentColor, currentImageId);
-        setIsSaving(true);
-        setProgressMessage('Criando arquivo..')
-        setProgress(0);
-        let archive_id = null;
-        try {
-            let archiveData = {
-                archive_name: title.value,
-                archive_date: new Date().toDateString(),
-                archive_animal: type.value,
-                archive_local: part.value
-            };
-        setProgress(5);
-            const response = await addArchive(archiveData);
-            archive_id = response.id;        
-        } catch (error) {
-            console.error(error);
-        }
-        setProgress(15);
-
-        let progress = 15.0;
-        let valuePerImage = 85 / fileList.length;
-        valuePerImage =  parseFloat(valuePerImage.toFixed(2));
-
-        let id = 0;
-        for (const element of fileList) {
-            const past = archive_id;
-            const number = id;
-            setProgressMessage('Salvando imagem' + number + ' do arquivo...')
-            try {
-                const path = await uploadAndReadFile(element, number, past);
-
-                let imageData = {
-                    image_path: path,
-                    archive_id: archive_id
-                };
-
-                const response = await addImage(imageData, imageData.archive_id);
-                let image_id = response.id;
-                
-                setProgressMessage('Salvando anotações da imagem' + number + ' do arquivo...')
-
-                for (const note of annotations.states[id]) {
-                    try {
-                        let noteData = {
-                            image_id: image_id,
-                            active: note.active,
-                            color: note.color,
-                            handles: note.handles,
-                            invalidated: note.invalidated,
-                            note_text: note.text,
-                            uuid_text: note.uuid,
-                            visible: note.visible
-                        };
-                        const resp = await addNote(noteData, image_id);
-                        console.log(resp);
-                    } catch (error) {
-                        console.error(error);
-                    }
-                }
-            } catch (error) {
-                console.error(error);
-            }
-            progress += valuePerImage;
-            progress = parseFloat(progress.toFixed(2));
-            setProgress(progress);
-            id++;
-        }
-        setProgress(100);
-        setIsSaving(false);
-        setProgressMessage('Arquivo salvo')
-        setSaveMessage('Arquivo salvo');
-        setTimeout(() => {
-            setSaveMessage('');
-            window.location.reload();
-        }, 3000);
     };
 
-    async function uploadAndReadFile(element, number, past) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async function (event) {
-                const dicomFileBuffer = event.target.result;
-                const uploadStatus = await uploadArrayBuffer(dicomFileBuffer, `image${number}.dcm`, past);
-    
-                if (uploadStatus) {
-                    console.log(`Arquivo image${number}.dcm foi enviado com sucesso para a pasta ${past}`);
-                    resolve(uploadStatus); // Resolvendo a promessa com o status de upload
-                } else {
-                    console.error(`Erro ao enviar arquivo image${number}.dcm para a pasta ${past}`);
-                    reject(new Error(`Erro ao enviar arquivo image${number}.dcm para a pasta ${past}`)); // Rejeitando a promessa em caso de erro
-                }
-            };
-            reader.readAsArrayBuffer(element);
-        });
-    }
-
-    /////////////////////////////
-    //Função generica para selecionar as ferramentas
-    /*function setTool(toolName, disableList, activeTool) {
-        disableList.forEach((tool, index) => tools[index].disabled = tool);
-        currentTool = toolName;
-        disableList.forEach(tool => cornerstoneTools.setToolDisabled(tool));
-        cornerstoneTools.setToolActive(activeTool, { mouseButtonMask: 1 });
-    }
-
-    //Evento para selecionar mover
-    move.addEventListener('click', function (event) { setTool("move", [true, false, false, false], 'Pan'); });
-    //Evento para selecionar contraste
-    contrast.addEventListener('click', function (event) { setTool("contrast", [false, true, false, false], 'Wwwc'); });
-    //Evento para selecionar zoom
-    zoom.addEventListener('click', function (event) { setTool("zoom", [false, false, true, false], 'Zoom'); });
-    //Evento para selecionar rotacionar
-    rotate.addEventListener('click', function (event) { setTool("rotate", [false, false, false, true], 'Rotate'); });*/
-    /////////////////////////////
+    const handleCancelClick = async (event) => {
+        // Implement handleCancelClick function
+    };
 
     /////////////////////////////
     //Função genérica para eventos de visibilidade das anotações
     function handleVisibilityChange(colorCheckbox, color, tool) {
-        saveByColor(currentColor, currentImageId);
+        saveByColor(state.currentColor, state.currentImageId);
         editVisibility(color, colorCheckbox.checked);
         tool.disabled = !colorCheckbox.checked;
 
-        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(fileList[currentImageId]);
+        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(state.fileList[state.currentImageId]);
         cornerstone.loadImage(imageId).then(function (image) {
             const viewport = cornerstone.getDefaultViewportForImage(element, image);
             cornerstone.displayImage(element, image, viewport);
-            loadAnnotations(currentImageId);
+            loadAnnotations(state.currentImageId);
         });
     }
 
-    //Evento para a cor amarela
-    osso.addEventListener('change', function () { handleVisibilityChange(osso, 'cyan', optionOssos); });
-    //Evento para a cor roxa
-    pele.addEventListener('change', function () { handleVisibilityChange(pele, 'lightcoral', optionPele); });
-    //Evento para a cor verde
-    orgao.addEventListener('change', function () { handleVisibilityChange(orgao, 'lime', optionOrgao); });
-    //Evento para a cor vermelha
-    perigo.addEventListener('change', function () { handleVisibilityChange(perigo, 'gold', optionPerigo); });
+    function getOptionTool(annotationType) {
+        return typeSpecie.querySelector(`option[value="${annotationType}"]`);
+    }
+
+    function addSwitchEventListeners() {
+        idSwitchs.forEach((id, index) => {
+            const switchElement = document.getElementById(id);
+            const color = colorsImplanted[index];
+            const annotationType = typeAnnotationsImplanted[index];
+            const optionTool = getOptionTool(annotationType);
+
+            switchElement.addEventListener('change', function () {
+                handleVisibilityChange(switchElement, color, optionTool);
+            });
+        });
+    }
 
     //Função para editar a visibilidade
     function editVisibility(color, visible) {
@@ -345,51 +182,37 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     /////////////////////////////
     function updateImage(newImageId) {
         cornerstoneTools.clearToolState(element, note);
-        currentImageId = newImageId;
+        state.currentImageId = newImageId;
 
-        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(fileList[currentImageId]);
+        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(state.fileList[state.currentImageId]);
         cornerstone.loadImage(imageId).then(function (image) {
             const viewport = cornerstone.getDefaultViewportForImage(element, image);
             cornerstone.displayImage(element, image, viewport);
-            loadAnnotations(currentImageId);
+            loadAnnotations(state.currentImageId);
         }).catch((error) => {
             console.error('Error loading image:', error);
         });
-        setCurrentImage(newImageId+1);
+        setCurrentImage(newImageId + 1);
     }
 
     function loadAnnotations(imageId) {
         if (annotations.states[imageId]) {
-            console.log(annotations.states[imageId])
+            console.log(annotations.states[imageId]);
             for (const annotation of annotations.states[imageId]) {
                 cornerstoneTools.addToolState(element, note, annotation);
             }
         }
     }
 
-    function saveByColor(color, imageId) {
-        const currentState = cornerstoneTools.getToolState(element, note);
-        if (currentState && currentState.data.length > 0) {
-            for (const annotation of currentState.data) {
-                if (annotation.color === undefined) {
-                    annotation.color = color;
-                }
-            }
-            annotations.states[imageId] = currentState.data;
-        }
-        console.log(annotations.states[imageId])
-    }
-
     const cleanup = () => {
-         // Limpa as configurações ou estados quando o componente é desmontado
-         setIsSaving(false);
-         setProgress(0);
-         setProgressMessage('');
-         setSaveMessage('');
-         setCurrentImage(0);
-         setTotalImages(0);
-         setHandleSave([false, false, false]);
-         //isInitialized = false; // Reinicializa para próximo uso
+        // Limpa as configurações ou estados quando o componente é desmontado
+        setIsSaving(false);
+        setProgress(0);
+        setProgressMessage('');
+        setSaveMessage('');
+        setCurrentImage(0);
+        setTotalImages(0);
+        //isInitialized = false; // Reinicializa para próximo uso
     };
 
     /////////////////////////////
@@ -399,4 +222,127 @@ export const EditFunctions = ({ setIsSaving, setProgress, setProgressMessage, se
     };
 };
 
-export default EditFunctions;
+export const newTypeAnnotation = ({ annotation }) => {
+    nameSwitchs.push(annotation.name);
+    idSwitchs.push(annotation.idSwitch);
+    colorsImplanted.push(annotation.color);
+    typeAnnotationsImplanted.push(annotation.idOption);
+};
+
+export const handleSave = async ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage, archive }) => {
+    saveByColor(state.currentColor, state.currentImageId);
+    setIsSaving(true);
+    setProgressMessage('Criando arquivo..')
+    setProgress(0);
+    let archive_id = null;
+    try {
+        let archiveData = {
+            archive_name: archive.title,
+            archive_date: new Date().toDateString(),
+            archive_animal: archive.animalType,
+            archive_local: archive.location,
+            nameSwitchs: nameSwitchs,
+            idSwitchs: idSwitchs,
+            colorsImplanted: colorsImplanted,
+            typeAnnotationsImplanted: typeAnnotationsImplanted
+        };
+    setProgress(5);
+        const response = await addArchive(archiveData);
+        archive_id = response.id;        
+    } catch (error) {
+        console.error(error);
+    }
+    setProgress(15);
+
+    let progress = 15.0;
+    let valuePerImage = 85 / state.fileList.length;
+    valuePerImage =  parseFloat(valuePerImage.toFixed(2));
+
+    let id = 0;
+    for (const element of state.fileList) {
+        const past = archive_id;
+        const number = id;
+        setProgressMessage('Salvando imagem' + number + ' do arquivo...')
+        try {
+            const path = await uploadAndReadFile(element, number, past);
+
+            let imageData = {
+                image_path: path,
+                archive_id: archive_id
+            };
+
+            const response = await addImage(imageData, imageData.archive_id);
+            let image_id = response.id;
+            
+            setProgressMessage('Salvando anotações da imagem' + number + ' do arquivo...')
+
+            for (const note of annotations.states[id]) {
+                try {
+                    let noteData = {
+                        image_id: image_id,
+                        active: note.active,
+                        color: note.color,
+                        handles: note.handles,
+                        invalidated: note.invalidated,
+                        note_text: note.text,
+                        uuid_text: note.uuid,
+                        visible: note.visible
+                    };
+                    const resp = await addNote(noteData, image_id);
+                    console.log(resp);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        }
+        progress += valuePerImage;
+        progress = parseFloat(progress.toFixed(2));
+        setProgress(progress);
+        id++;
+    }
+    setProgress(100);
+    setIsSaving(false);
+    setProgressMessage('Arquivo salvo')
+    setSaveMessage('Arquivo salvo');
+    setTimeout(() => {
+        setSaveMessage('');
+        window.location.reload();
+    }, 3000);
+};
+
+async function uploadAndReadFile(element, number, past) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async function (event) {
+            const dicomFileBuffer = event.target.result;
+            const uploadStatus = await uploadArrayBuffer(dicomFileBuffer, `image${number}.dcm`, past);
+
+            if (uploadStatus) {
+                console.log(`Arquivo image${number}.dcm foi enviado com sucesso para a pasta ${past}`);
+                resolve(uploadStatus); // Resolvendo a promessa com o status de upload
+            } else {
+                console.error(`Erro ao enviar arquivo image${number}.dcm para a pasta ${past}`);
+                reject(new Error(`Erro ao enviar arquivo image${number}.dcm para a pasta ${past}`)); // Rejeitando a promessa em caso de erro
+            }
+        };
+        reader.readAsArrayBuffer(element);
+    });
+}
+
+//Função para salvar por cor
+function saveByColor(color, imageId) {
+    const currentState = cornerstoneTools.getToolState(element, note);
+    if (currentState && currentState.data.length > 0) {
+        for (const annotation of currentState.data) {
+            if (annotation.color === undefined) {
+                annotation.color = color;
+            }
+        }
+        annotations.states[imageId] = currentState.data;
+    }
+};
+
+export default [EditFunctions, newTypeAnnotation, handleSave];
+

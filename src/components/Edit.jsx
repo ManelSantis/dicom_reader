@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import Pagination from '@mui/material/Pagination';
+import Stack from '@mui/material/Stack';
+import React, { useEffect, useRef, useState } from 'react';
 import { Annotations } from './EditComponents/Annotations';
 import { Editor } from "./EditComponents/Editor";
-import { ImagesCarousel } from "./EditComponents/EditorComponents/ImagesCarousel";
-import EditFunctions from "./EditFunctions";
+import { EditFunctions, handleSave, newTypeAnnotation } from "./EditFunctions";
 import { useLogin } from './LoginProvider'; // Verifique o caminho do seu provedor de login
 
 export const Edit = () => {
@@ -14,22 +15,21 @@ export const Edit = () => {
     const [saveMessage, setSaveMessage] = useState('');
     const [currentImage, setCurrentImage] = useState(0);
     const [totalImages, setTotalImages] = useState(0);
-    const [handleSave, setHandleSave] = useState([false, false, false]);
+    const [isDisabled, setIsDisabled] = useState(true);
+    const [annotations, setAnnotations] = useState([]);
+    const [archives, setArchives] = useState([]);
     const didMountRef = useRef(false);
-    
+
+
     useEffect(() => {
         if (didMountRef.current) return;
         didMountRef.current = true;
 
         EditFunctions({
-                setIsSaving,
-                setProgress,
-                setProgressMessage,
-                setSaveMessage,
-                setCurrentImage,
-                setTotalImages,
-                setHandleSave,
-            }).initialize();
+            setCurrentImage,
+            setTotalImages,
+            setIsDisabled,
+        }).initialize();
 
     }, []);
 
@@ -49,13 +49,33 @@ export const Edit = () => {
         };
     }, []);
 
+    const handleAnnotationSave = (annotation) => {
+        setAnnotations(prev => [...prev, annotation]);
+        newTypeAnnotation({annotation});
+    };
+
+    const handleArchiveSave = (archive) => {
+        setArchives(prev => [...prev, archive]);
+        handleSave({
+            setIsSaving,
+            setProgress,
+            setProgressMessage,
+            setSaveMessage,
+            archive});
+    };
+
     return (
-        <div style={{ height: newHeight + 'px' }} className="flex w-screen bg-slate-700">
+        <div style={{ height: newHeight + 'px' }} className="flex w-full bg-slate-700">
             <div className="w-[80%] h-full">
-                <Editor handleSaveClick={handleSave} />
-                <ImagesCarousel totalImages={totalImages} currentImage={currentImage} />
+                <Editor archiveSave={handleArchiveSave} isDisabled={isDisabled} />
+                <div className="flex flex-col items-center justify-center font-bold text-[#1D3557] w-full h-[15%] bg-white border-t-2 border-gray-400">
+                    {currentImage} / {totalImages}
+                    <Stack spacing={2} shape="rounded" className='pt-4'>
+                        <Pagination count={totalImages} page={currentImage} variant="outlined" shape="rounded" />
+                    </Stack>
+                </div>
             </div>
-            <Annotations />
+            <Annotations onSave={handleAnnotationSave} />
             {isSaving && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
                     <div className='w-[50%] h-[300px] rounded-lg flex flex-col bg-white items-center justify-center'>
