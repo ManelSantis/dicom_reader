@@ -1,13 +1,14 @@
+import { Alert, CircularProgress, Snackbar, Typography } from '@mui/material';
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
 import React, { useEffect, useRef, useState } from 'react';
 import { Annotations } from './EditComponents/Annotations';
 import { Editor } from "./EditComponents/Editor";
 import { EditFunctions, handleSave, newTypeAnnotation } from "./EditFunctions";
-import { useLogin } from './LoginProvider'; // Verifique o caminho do seu provedor de login
+import { useLogin } from './LoginProvider';
 
 export const Edit = () => {
-    const { isAdmin, isLogin } = useLogin(); // Verifique se os estados isAdmin e isLogin são fornecidos corretamente
+    const { isAdmin, isLogin } = useLogin(); 
     const [newHeight, setNewHeight] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -51,17 +52,17 @@ export const Edit = () => {
 
     const handleAnnotationSave = (annotation) => {
         setAnnotations(prev => [...prev, annotation]);
-        newTypeAnnotation({annotation});
+        newTypeAnnotation({ annotation });
     };
 
     const handleArchiveSave = (archive) => {
         setArchives(prev => [...prev, archive]);
         handleSave({
             setIsSaving,
-            setProgress,
             setProgressMessage,
             setSaveMessage,
-            archive});
+            archive
+        });
     };
 
     return (
@@ -77,23 +78,20 @@ export const Edit = () => {
             </div>
             <Annotations onSave={handleAnnotationSave} />
             {isSaving && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-                    <div className='w-[50%] h-[300px] rounded-lg flex flex-col bg-white items-center justify-center'>
-                        <div className=''>{progressMessage}</div>
-                        <div className="w-[70%] mt-6 bg-gray-200 rounded-full dark:bg-gray-700">
-                            <div className="bg-blue-600 text-xs font-medium text-blue-100 text-center p-1.5 leading-none rounded-full" style={{ width: `${progress}%` }}> </div>
-                        </div>
-                    </div>
+                <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
+                    <Typography variant="h6" color="white" gutterBottom>{progressMessage}</Typography>
+                    <CircularProgress />
                 </div>
             )}
-            {saveMessage && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-                    <div className='w-[20%] h-[250px] rounded-lg flex flex-col bg-white items-center justify-center'>
-                        <div className=''>{saveMessage}</div>
-                        <div className='mt-6'><i className="fa fa-circle-check text-green-500" style={{ fontSize: '90px' }}></i></div>
-                    </div>
-                </div>
-            )}
+            <Snackbar
+                open={!!saveMessage}
+                autoHideDuration={1500}
+                onClose={() => setSaveMessage('')}
+            >
+                <Alert onClose={() => setSaveMessage('')} severity="success" sx={{ width: '100%' }}>
+                    {saveMessage}
+                </Alert>
+            </Snackbar>
         </div>
     );
 };

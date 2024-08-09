@@ -100,13 +100,13 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             state.currentImageId = 0;
             stack.imageIds = [];
             annotations.imageIds = [];
-
+            annotations.states = [];
+            
             for (let i = 0; i < state.fileList.length; i++) {
                 stack.imageIds.push(i);
                 annotations.imageIds.push(i);
                 annotations.states.push(await fetchNotesByImage(state.fileList[i].image_id));
             }
-
             cornerstoneTools.addStackStateManager(element, ['stack']);
             cornerstoneTools.addToolState(element, 'stack', stack);
 
@@ -1155,9 +1155,6 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
 export const Switchs = ({ idSwitchs, colorsImpanted }) => {
     /////////////////////////////
-
-    console.log(idSwitchs)
-    console.log(colorsImpanted)
     if (idSwitchs && colorsImpanted) {
         //Função genérica para eventos de visibilidade das anotações
         function handleVisibilityChange(colorCheckbox, color) {

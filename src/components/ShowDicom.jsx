@@ -90,7 +90,6 @@ export const ShowDicom = () => {
 
     }, [archive_id, dataFetched]);
 
-
     useEffect(() => {
 
         if (didSwitchRef.current && !switchAdd) return;
@@ -102,7 +101,10 @@ export const ShowDicom = () => {
     }, [annotations, switchAdd]);
 
     useEffect(() => {
+
         if (archiveData && archiveData.nameSwitchs && archiveData.idSwitchs && archiveData.colorsImpanted && archiveData.typeAnnotationsImplanted) {
+        console.log(archive_id)
+           
             const newAnnotations = archiveData.nameSwitchs.map((name, index) => ({
                 name,
                 color: archiveData.colorsImpanted[index],
@@ -113,7 +115,7 @@ export const ShowDicom = () => {
             setSwitchAdd(true);
         }
 
-    }, [archiveData]);
+    }, [archiveData, archive_id]);
 
 
     const handleReset = () => {
@@ -129,7 +131,7 @@ export const ShowDicom = () => {
                 <div className='w-[80%] h-full'>
                     <div className="w-full h-[85%] flex items-center justify-center bg-white" onContextMenu={() => false}>
                         <div id="dicomImage" className="w-[99%] h-[97%] bg-blue-400 relative">
-                            <div className='flex flex-col absolute top-[2%] left-[1%] z-40 space-y-2'>
+                            <div className='flex flex-col absolute top-[2%] left-[1%] z-20 space-y-2'>
                                 <Fab color="success" id='pseudo' onClick={togglePseudoColor}>
                                     <BrushIcon />
                                 </Fab>
@@ -138,7 +140,7 @@ export const ShowDicom = () => {
                                     <RestoreIcon />
                                 </Fab>
                             </div>
-                            <div className='flex flex-col absolute top-[2%] right-[1%] z-40 space-y-2'>
+                            <div className='flex flex-col absolute top-[2%] right-[1%] z-20 space-y-2'>
                                 <Fab color="info" id="show" onClick={showInformationsFunction}>
                                     <InfoIcon />
                                 </Fab>
@@ -171,11 +173,9 @@ export const ShowDicom = () => {
                     </Box>
                 </aside>
                 {isLoading && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-                        <div className='w-[300px] h-[300px] rounded-lg flex flex-col bg-white items-center justify-center space-y-8'>
-                            <Typography variant="h6" gutterBottom>Carregando...</Typography>
-                            <CircularProgress />
-                        </div>
+                    <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
+                        <Typography variant="h6" color="white" gutterBottom>Carregando...</Typography>
+                        <CircularProgress />
                     </div>
                 )}
 

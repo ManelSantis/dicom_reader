@@ -204,17 +204,6 @@ export const EditFunctions = ({ setCurrentImage, setTotalImages, setIsDisabled }
         }
     }
 
-    const cleanup = () => {
-        // Limpa as configurações ou estados quando o componente é desmontado
-        setIsSaving(false);
-        setProgress(0);
-        setProgressMessage('');
-        setSaveMessage('');
-        setCurrentImage(0);
-        setTotalImages(0);
-        //isInitialized = false; // Reinicializa para próximo uso
-    };
-
     /////////////////////////////
 
     return {
@@ -229,11 +218,10 @@ export const newTypeAnnotation = ({ annotation }) => {
     typeAnnotationsImplanted.push(annotation.idOption);
 };
 
-export const handleSave = async ({ setIsSaving, setProgress, setProgressMessage, setSaveMessage, archive }) => {
+export const handleSave = async ({ setIsSaving, setProgressMessage, setSaveMessage, archive }) => {
     saveByColor(state.currentColor, state.currentImageId);
     setIsSaving(true);
     setProgressMessage('Criando arquivo..')
-    setProgress(0);
     let archive_id = null;
     try {
         let archiveData = {
@@ -246,13 +234,11 @@ export const handleSave = async ({ setIsSaving, setProgress, setProgressMessage,
             colorsImplanted: colorsImplanted,
             typeAnnotationsImplanted: typeAnnotationsImplanted
         };
-    setProgress(5);
         const response = await addArchive(archiveData);
         archive_id = response.id;        
     } catch (error) {
         console.error(error);
     }
-    setProgress(15);
 
     let progress = 15.0;
     let valuePerImage = 85 / state.fileList.length;
@@ -299,17 +285,15 @@ export const handleSave = async ({ setIsSaving, setProgress, setProgressMessage,
         }
         progress += valuePerImage;
         progress = parseFloat(progress.toFixed(2));
-        setProgress(progress);
         id++;
     }
-    setProgress(100);
     setIsSaving(false);
-    setProgressMessage('Arquivo salvo')
+    setProgressMessage('Arquivo salvo');
     setSaveMessage('Arquivo salvo');
     setTimeout(() => {
         setSaveMessage('');
         window.location.reload();
-    }, 3000);
+    }, 1500);
 };
 
 async function uploadAndReadFile(element, number, past) {

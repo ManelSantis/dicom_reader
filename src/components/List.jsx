@@ -26,7 +26,7 @@ export const List = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [order, setOrder] = useState('asc');
-    const [orderBy, setOrderBy] = useState('id'); 
+    const [orderBy, setOrderBy] = useState('id');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -84,11 +84,9 @@ export const List = () => {
     return (
         <>
             {isLoading ? (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-                    <div className='w-[300px] h-[300px] rounded-lg flex flex-col bg-white items-center justify-center space-y-8'>
-                        <Typography variant="h6" gutterBottom>Carregando...</Typography>
-                        <CircularProgress />
-                    </div>
+                <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
+                    <Typography variant="h6" color="white"  gutterBottom>Carregando...</Typography>
+                    <CircularProgress />
                 </div>
             ) : (
                 <>

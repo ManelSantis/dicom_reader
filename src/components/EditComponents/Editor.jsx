@@ -101,7 +101,7 @@ export const Editor = ({ archiveSave, isDisabled }) => {
                             <MenuItem value={'felino'}>Felino</MenuItem>
                             <MenuItem value={'cateto'}>Cateto</MenuItem>
                             <MenuItem value={'cutia'}>Cutia</MenuItem>
-                            <MenuItem value={'mocó'}>Mocó</MenuItem>
+                            <MenuItem value={'moco'}>Mocó</MenuItem>
                         </Select>
                     </FormControl>
                     <FormControl fullWidth margin="dense">
