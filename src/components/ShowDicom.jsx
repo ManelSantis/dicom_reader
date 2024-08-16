@@ -1,13 +1,20 @@
+import BrushIcon from '@mui/icons-material/Brush';
+import InfoIcon from '@mui/icons-material/Info';
+import RestoreIcon from '@mui/icons-material/Restore';
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Switch, Typography } from '@mui/material';
+import Fab from '@mui/material/Fab';
+import Pagination from '@mui/material/Pagination';
+import Stack from '@mui/material/Stack';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShowAnnotationsTable } from "./EditComponents/AnnotationsComponents/ShowAnnotationsTable";
-import { ImagesCarousel } from "./EditComponents/EditorComponents/ImagesCarousel";
+import { getArchiveById } from '../services/GetArchive';
 import { ResizableDraggableDiv } from './ShowDicomComponents/ResizableDraggableDiv';
 import { Sliders } from './ShowDicomComponents/Sliders';
-import ShowFunctions from './ShowFunctions';
+import { ShowFunctions, Switchs } from './ShowFunctions';
 
 export const ShowDicom = () => {
     const { archive_id } = useParams();
+    const [archiveData, setArchiveData] = useState({});
     const [newHeight, setNewHeight] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [pseudoColor, setPseudoColor] = useState(false);
@@ -18,6 +25,11 @@ export const ShowDicom = () => {
     const [currentImage, setCurrentImage] = useState(0);
     const [totalImages, setTotalImages] = useState(0);
     const didMountRef = useRef(false);
+    const didSwitchRef = useRef(false);
+    const [resetSliders, setResetSliders] = useState(false);
+    const [annotations, setAnnotations] = useState([]);
+    const [dataFetched, setDataFetched] = useState(false);
+    const [switchAdd, setSwitchAdd] = useState(false);
 
     const showInformationsFunction = () => {
         setShowInformations(!showInformations);
@@ -25,6 +37,21 @@ export const ShowDicom = () => {
 
     const togglePseudoColor = () => {
         setPseudoColor(!pseudoColor);
+    };
+
+    const fetchData = async () => {
+        try {
+            const data = await getArchiveById(archive_id);
+            if (data && data.length > 0) {
+                setArchiveData(data[0]);
+            } else {
+                console.error('Dados recebidos estão vazios ou não no formato esperado.');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar dados:', error);
+        } finally {
+            setDataFetched(true);
+        }
     };
 
     useEffect(() => {
@@ -40,97 +67,157 @@ export const ShowDicom = () => {
         updateHeight();
 
         return () => window.removeEventListener('resize', updateHeight);
-
     }, []);
 
     useEffect(() => {
-        if (didMountRef.current) return;
+        fetchData();
+    }, [archive_id]);
+
+    useEffect(() => {
+        if (didMountRef.current || !dataFetched) return;
         didMountRef.current = true;
 
-        ShowFunctions(archive_id,
+        ShowFunctions(
+            archive_id,
             setProgress,
             setProgressMessage,
             setIsLoading,
             setDicomData,
             setCurrentImage,
             setTotalImages,
-            setPseudoColor).initialize();
+            setPseudoColor
+        ).initialize();
 
-    }, [archive_id]);
+    }, [archive_id, dataFetched]);
+
+    useEffect(() => {
+
+        if (didSwitchRef.current && !switchAdd) return;
+        didSwitchRef.current = true;
+
+        const idSwitchs = archiveData.idSwitchs;
+        const colorsImpanted = archiveData.colorsImpanted;
+        Switchs({ idSwitchs, colorsImpanted });
+    }, [annotations, switchAdd]);
+
+    useEffect(() => {
+
+        if (archiveData && archiveData.nameSwitchs && archiveData.idSwitchs && archiveData.colorsImpanted && archiveData.typeAnnotationsImplanted) {
+        console.log(archive_id)
+           
+            const newAnnotations = archiveData.nameSwitchs.map((name, index) => ({
+                name,
+                color: archiveData.colorsImpanted[index],
+                idSwitch: archiveData.idSwitchs[index],
+                idOption: archiveData.typeAnnotationsImplanted[index]
+            }));
+            setAnnotations(newAnnotations);
+            setSwitchAdd(true);
+        }
+
+    }, [archiveData, archive_id]);
+
+
+    const handleReset = () => {
+        setResetSliders(prev => !prev);
+    };
 
     return (
         <>
             {pseudoColor && (
                 <ResizableDraggableDiv />
-            )} 
+            )}
             <div style={{ height: newHeight + 'px' }} className="flex w-full items-center bg-black" onContextMenu={() => false}>
                 <div className='w-[80%] h-full'>
-                    <div id="dicomImage" className="w-full h-[90%] bg-black"> </div>
-                    <ImagesCarousel totalImages={totalImages} currentImage={currentImage} />
-                </div>
-                <div className="w-[20%] p-2 pt-8 h-full bg-[#457B9D] text-[#F1FAEE] font-[600] overflow-y-auto">
-                    <div className="w-full  items-center mb-8 text-2xl">
-                        <span className="w-full flex flex-col items-center">
-                            Ferramentas
-                        </span>
+                    <div className="w-full h-[85%] flex items-center justify-center bg-white" onContextMenu={() => false}>
+                        <div id="dicomImage" className="w-[99%] h-[97%] bg-blue-400 relative">
+                            <div className='flex flex-col absolute top-[2%] left-[1%] z-20 space-y-2'>
+                                <Fab color="success" id='pseudo' onClick={togglePseudoColor}>
+                                    <BrushIcon />
+                                </Fab>
+                                <input type="file" id="fileInput" accept=".dcm" multiple className="hidden" ref={null} />
+                                <Fab color="error" id="reset" onClick={handleReset}>
+                                    <RestoreIcon />
+                                </Fab>
+                            </div>
+                            <div className='flex flex-col absolute top-[2%] right-[1%] z-20 space-y-2'>
+                                <Fab color="info" id="show" onClick={showInformationsFunction}>
+                                    <InfoIcon />
+                                </Fab>
+                            </div>
+                        </div>
                     </div>
-                    <Sliders />
-                    <div className="w-full flex flex-col justify-center items-center p-4 space-y-4">
-                    <h1 className="text-[#F1FAEE] text-[18px] sm:text-[22px] lg:text-[24px] font-bold">Exibir Anotações</h1>
-                    <ShowAnnotationsTable />
-                    </div>
-                    <div className="w-full flex flex-col bg-[#457B9D] text-[#F1FAEE] font-semibold p-4 space-y-2">
-                        <button
-                            className="w-full flex items-center justify-center hover:bg-[#7db0cf] mb-0 p-2 rounded"
-                            id="pseudo"
-                            onClick={togglePseudoColor}
-                        >
-                            <i className="fa fa-paint-brush fa-lg mr-2"></i>
-                            <span>{pseudoColor ? 'Ocultar Pseudocor' : 'Pseudocor'}</span>
-                        </button>
-                        <button className="w-full flex items-center justify-center hover:bg-[#7db0cf] mb-4 p-2 rounded" id="reset">
-                            <i className="fa fa-sync fa-lg mr-2"></i>
-                            <span>Restaurar</span>
-                        </button>
-                        <button className="w-full flex items-center justify-center hover:bg-[#7db0cf] mb-4 p-2 rounded" id="show" onClick={showInformationsFunction}>
-                            <i className="fa fa-info fa-lg mr-2"></i>
-                            <span>{showInformations ? 'Fechar Informações' : 'Visualizar Informações'}</span>
-                        </button>
+                    <div className="flex flex-col items-center justify-center font-bold text-[#1D3557] w-full h-[15%] bg-white border-t-2 border-gray-400">
+                        {currentImage} / {totalImages}
+                        <Stack spacing={2} shape="rounded" className='pt-4'>
+                            <Pagination count={totalImages} page={currentImage} variant="outlined" shape="rounded" />
+                        </Stack>
                     </div>
                 </div>
+                <aside className="h-full w-full sm:w-[40%] lg:w-[30%] xl:w-[20%] flex flex-col bg-white border-l-2 border-gray-400">
+                    <Box role="presentation">
+                        <label htmlFor="" className="flex b-2 text-lg items-center justify-center font-bold p-2 text-gray-900"> Ferramentas </label>
+                        <Sliders reset={resetSliders} />
+                        <div className="w-full flex flex-col p-4 space-y-4">
+                            <label className="block b-2 text-sm font-medium p-4 text-gray-900">Exibir Anotações</label>
+                            <div id="switchsAnnotations" className='h-[240px] flex flex-col p-4 space-y-4 overflow-y-auto max-h-[240px]'>
+                                {annotations.map(annotation => (
+                                    <div key={annotation.idSwitch} className='flex items-center space-x-4'>
+                                        <label htmlFor={annotation.idSwitch} className="block text-sm font-medium text-gray-900 w-1/2">{annotation.name}</label>
+                                        <Switch id={annotation.idSwitch} defaultChecked />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <Divider className=' w-full' />
+                    </Box>
+                </aside>
                 {isLoading && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-                        <div className='w-[50%] h-[300px] rounded-lg flex flex-col bg-white items-center justify-center'>
-                            <div className='text-lg font-semibold'>{progressMessage}</div>
-                            <div className="w-[70%] mt-6 bg-gray-200 rounded-full dark:bg-gray-700">
-                                <div className="bg-blue-600 text-xs font-medium text-blue-100 text-center p-1.5 leading-none rounded-full" style={{ width: `${progress}%` }}> </div>
-                            </div>
-                        </div>
+                    <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
+                        <Typography variant="h6" color="white" gutterBottom>Carregando...</Typography>
+                        <CircularProgress />
                     </div>
                 )}
-                {showInformations && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
-                        <div className="w-[80%] max-w-[600px] h-[auto] rounded-lg bg-white p-6 shadow-lg">
-                            <div className="flex justify-between items-center text-xl font-semibold mb-4">
-                                <span>Informações</span>
-                                <button onClick={showInformationsFunction} className="text-gray-500 hover:text-gray-800">
-                                    <i className="fa-solid fa-times"></i> {/* Ícone de fechar */}
-                                </button>
-                            </div>
-                            <div className="w-full text-gray-900 space-y-2">
-                                <p><strong>Nome do paciente:</strong> {dicomData[0] || 'Não Encontrado'}</p>
-                                <p><strong>Data da imagem:</strong> {dicomData[1] || 'Não Encontrado'}</p>
-                                <p><strong>Doutor responsável:</strong> {dicomData[2] || 'Não Encontrado'}</p>
-                                <p><strong>Local:</strong> {dicomData[3] || 'Não Encontrado'}</p>
-                                <p><strong>Máquina:</strong> {dicomData[4] || 'Não Encontrado'}</p>
-                                <p><strong>Modelo do equipamento:</strong> {dicomData[5] || 'Não Encontrado'}</p>
-                                <p><strong>Modalidade:</strong> {dicomData[6] || 'Não Encontrado'}</p>
-                                <p><strong>Descrição do estudo:</strong> {dicomData[7] || 'Não Encontrado'}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
             </div>
+            <Dialog open={showInformations} onClose={showInformationsFunction} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <div className="flex justify-center items-center text-xl font-semibold">
+                        <span>Informações</span>
+                    </div>
+                </DialogTitle>
+                <DialogContent dividers>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Nome do paciente:</strong> {dicomData[0] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Data da imagem:</strong> {dicomData[1] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Doutor responsável:</strong> {dicomData[2] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Local:</strong> {dicomData[3] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Máquina:</strong> {dicomData[4] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Modelo do equipamento:</strong> {dicomData[5] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Modalidade:</strong> {dicomData[6] || 'Não Encontrado'}
+                    </Typography>
+                    <Typography variant="body1" color="textPrimary" paragraph>
+                        <strong>Descrição do estudo:</strong> {dicomData[7] || 'Não Encontrado'}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={showInformationsFunction} color="primary">
+                        Fechar
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 };

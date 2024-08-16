@@ -14,26 +14,33 @@ cornerstoneTools.external.cornerstone = cornerstone;
 cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 cornerstoneTools.external.Hammer = hammer;
 
+const state = {
+    fileList: null,
+    imageList: null,
+    imageListDownload: null,
+    originalPixels: null,
+    currentImageId: 0
+};
+
+const annotations = { currentImageId: state.currentImageId, imageIds: [], states: [] };
+const note = 'ArrowAnnotate';
+let element = document.getElementById('dicomImage');
+let sharpness = document.getElementById('sharpness');
+let gama = document.getElementById('gama');
+
 export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIsLoading, setDicomData, setCurrentImage, setTotalImages, setPseudoColor) => {
 
-    let fileList;
-    let imageListDownload;
-    let imageList;
-    let originalPixels;
-    let currentImageId = 0;
-    const note = 'ArrowAnnotate';
     let currentPseudo = false;
 
-    //Checkboxes
-    const osso = document.getElementById('osso');
-    const orgao = document.getElementById("orgao");
-    const pele = document.getElementById("pele");
-    const perigo = document.getElementById("perigo");
-
+    const divSwitchsAnnotations = document.getElementById('switchsAnnotations');
+    const pseudo = document.getElementById('pseudo');
+    const reset = document.getElementById('reset');
+    const show = document.getElementById('show');
+    element = document.getElementById('dicomImage');
+    sharpness = document.getElementById('sharpness');
+    gama = document.getElementById('gama');
     const stack = { currentImageIdIndex: 0, imageIds: [], };
-    const annotations = { currentImageId, imageIds: [], states: [] };
 
-    let element = document.getElementById('dicomImage');
     /*document.getElementById('applyMean3x3').addEventListener('click', () => applyMaskToAllImages('mean', 3));
     document.getElementById('applyMean5x5').addEventListener('click', () => applyMaskToAllImages('mean', 5));
     document.getElementById('applyMedian3x3').addEventListener('click', () => applyMaskToAllImages('median', 3));
@@ -49,12 +56,6 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     document.getElementById('applyM1').addEventListener('click', () => applyMaskToAllImages('m1', 3));
     document.getElementById('applyM2').addEventListener('click', () => applyMaskToAllImages('m2', 3));
     document.getElementById('applyM3').addEventListener('click', () => applyMaskToAllImages('m3', 3));*/
-    document.getElementById('pseudo').addEventListener('click', () => applyPseudoColor());
-    document.getElementById('sharpness').addEventListener('change', () => applyEffects());
-    document.getElementById('gama').addEventListener('change', () => applyEffects());
-
-    document.getElementById('reset').addEventListener('click', resetOriginalPixels);
-    document.getElementById('show').addEventListener('click', () => getDicomData());
 
     const initialize = async () => {
 
@@ -63,17 +64,13 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             setIsLoading(true);
             setProgressMessage('Carregando imagens...');
             setProgress(0);
-            osso.checked = true;
-            pele.checked = true;
-            orgao.checked = true;
-            perigo.checked = true;
 
-            fileList = await fetchData();
-            const totalFiles = fileList.length;
+            state.fileList = await fetchData();
+            const totalFiles = state.fileList.length;
             setCurrentImage(1);
             setTotalImages(totalFiles);
 
-            const promises = fileList.map(async (file, index) => {
+            const promises = state.fileList.map(async (file, index) => {
                 const imageBlob = await getImageByPath(file.image_path);
                 setProgress((prev) => Math.min(prev + (90 / totalFiles), 90));
                 return imageBlob;
@@ -81,29 +78,35 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
 
             const imageBlobs = await Promise.all(promises);
 
-            imageListDownload = new Set();
+            state.imageListDownload = new Set();
 
             imageBlobs.forEach(dcmData => {
                 const blob = new Blob([dcmData]);
-                imageListDownload.add(blob);
+                state.imageListDownload.add(blob);
             })
 
 
-            imageList = Array.from(imageListDownload);
-            originalPixels = Array.from(imageListDownload);
+            state.imageList = Array.from(state.imageListDownload);
+            state.originalPixels = Array.from(state.imageListDownload);
 
             cornerstone.enable(element);
+
+            pseudo.addEventListener('click', () => applyPseudoColor());
+            reset.addEventListener('click', () => resetOriginalPixels());
+            show.addEventListener('click', () => getDicomData());
+            sharpness.addEventListener('change', () => applyEffects());
+            gama.addEventListener('change', () => applyEffects());
             element.addEventListener('wheel', handleMouseWheel);
-            currentImageId = 0;
+            state.currentImageId = 0;
             stack.imageIds = [];
             annotations.imageIds = [];
-
-            for (let i = 0; i < fileList.length; i++) {
+            annotations.states = [];
+            
+            for (let i = 0; i < state.fileList.length; i++) {
                 stack.imageIds.push(i);
                 annotations.imageIds.push(i);
-                annotations.states.push(await fetchNotesByImage(fileList[i].image_id));
+                annotations.states.push(await fetchNotesByImage(state.fileList[i].image_id));
             }
-
             cornerstoneTools.addStackStateManager(element, ['stack']);
             cornerstoneTools.addToolState(element, 'stack', stack);
 
@@ -111,7 +114,8 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             cornerstoneTools.addTool(apiTool);
 
             cornerstoneTools.setToolActive(note, { mouseButtonMask: null })
-            updateImage(currentImageId);
+
+            updateImage(state.currentImageId);
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
         }
@@ -137,52 +141,44 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     };
 
     const handleMouseWheel = (event) => {
-        if (fileList.length === 0) return
-        if (currentImageId >= 0 && currentImageId < fileList.length) {
+        if (state.fileList.length === 0) return
+        if (state.currentImageId >= 0 && state.currentImageId < state.fileList.length) {
             if (event.wheelDelta < 0 || event.detail > 0) {
-                if (currentImageId > 0) {
-                    currentImageId--;
+                if (state.currentImageId > 0) {
+                    state.currentImageId--;
                 }
             } else {
-                if (currentImageId < fileList.length - 1 && currentImageId >= 0) {
-                    currentImageId++;
+                if (state.currentImageId < state.fileList.length - 1 && state.currentImageId >= 0) {
+                    state.currentImageId++;
                 }
             }
         } else {
-            if (currentImageId < 0) {
-                currentImageId = 0;
+            if (state.currentImageId < 0) {
+                state.currentImageId = 0;
             }
 
-            if (currentImageId == fileList.length) {
-                currentImageId = fileList.length - 1;
+            if (state.currentImageId == state.fileList.length) {
+                state.currentImageId = state.fileList.length - 1;
             }
         }
-        updateImage(currentImageId);
+        updateImage(state.currentImageId);
     };
 
     function updateImage(newImageId) {
         cornerstoneTools.clearToolState(element, note);
-        currentImageId = newImageId;
+        state.currentImageId = newImageId;
 
-        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(imageList[currentImageId]);
+        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(state.imageList[state.currentImageId]);
         cornerstone.loadImage(imageId).then(function (image) {
             const viewport = cornerstone.getDefaultViewportForImage(element, image);
             cornerstone.displayImage(element, image, viewport);
-            loadAnnotations(currentImageId);
+            loadAnnotations(state.currentImageId);
             applyPseudoColor();
             setCurrentImage(newImageId + 1);
             setProgress(100);
             setIsLoading(false);
         })
 
-    }
-
-    function loadAnnotations(imageId) {
-        if (annotations.states[imageId]) {
-            for (const annotation of annotations.states[imageId]) {
-                cornerstoneTools.addToolState(element, note, annotation);
-            }
-        }
     }
 
     //Filtros MEDIA 3X3 e MEDIA 5X5
@@ -878,1851 +874,45 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     //Filtro PSEUDOCOR
     const applyPseudoColor = async () => {
         const canvas = document.getElementById('canvas');
-        const dicomFileBuffer = await imageList[currentImageId].arrayBuffer();
-        const byteArray = new Uint8Array(dicomFileBuffer);
-        const dataSet = dicomParser.parseDicom(byteArray);
-        const pixelDataElement = dataSet.elements.x7fe00010;
-        const dataOffset = pixelDataElement.dataOffset;
-        const length = pixelDataElement.length;
+        if (canvas) {
+            const dicomFileBuffer = await state.imageList[state.currentImageId].arrayBuffer();
+            const byteArray = new Uint8Array(dicomFileBuffer);
+            const dataSet = dicomParser.parseDicom(byteArray);
+            const pixelDataElement = dataSet.elements.x7fe00010;
+            const dataOffset = pixelDataElement.dataOffset;
+            const length = pixelDataElement.length;
 
-        const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
-        const rows = dataSet.uint16('x00280010');
-        const columns = dataSet.uint16('x00280011');
+            const pixelData = new Uint16Array(dicomFileBuffer, dataOffset, length / 2);
+            const rows = dataSet.uint16('x00280010');
+            const columns = dataSet.uint16('x00280011');
 
-        canvas.width = columns;
-        canvas.height = rows;
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.createImageData(columns, rows);
+            canvas.width = columns;
+            canvas.height = rows;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(columns, rows);
 
-        for (let i = 0; i < pixelData.length; i++) {
-            const pixel = pixelData[i];
-            const [r, g, b] = pseudoColor(pixel)
-            imageData.data[i * 4] = r;
-            imageData.data[i * 4 + 1] = g;
-            imageData.data[i * 4 + 2] = b;
-            imageData.data[i * 4 + 3] = 255;
+            for (let i = 0; i < pixelData.length; i++) {
+                const pixel = pixelData[i];
+                const [r, g, b] = pseudoColor(pixel)
+                imageData.data[i * 4] = r;
+                imageData.data[i * 4 + 1] = g;
+                imageData.data[i * 4 + 2] = b;
+                imageData.data[i * 4 + 3] = 255;
+            }
+
+            ctx.putImageData(imageData, 0, 0)
         }
 
-        ctx.putImageData(imageData, 0, 0)
-
-    }
-
-    const pseudoColor = (value) => {
-        let r, g, b;
-        switch (value) {
-            case 0:   //               0-R, 1-G, 2-B
-                r = 0;
-                g = 0;
-                b = 0;
-                break;
-            case 1:
-
-                r = 0;
-                g = 0;
-                b = 5;
-
-                break;
-            case 2:
-
-                r = 0;
-                g = 0;
-                b = 10;
-
-                break;
-            case 3:
-
-                r = 0;
-                g = 0;
-                b = 15;
-
-                break;
-            case 4:
-
-                r = 0;
-                g = 0;
-                b = 20;
-
-                break;
-            case 5:
-
-                r = 0;
-                g = 0;
-                b = 25;
-
-                break;
-            case 6:
-
-                r = 0;
-                g = 0;
-                b = 30;
-
-                break;
-            case 7:
-
-                r = 0;
-                g = 0;
-                b = 35;
-
-                break;
-            case 8:
-
-                r = 0;
-                g = 0;
-                b = 40;
-
-                break;
-            case 9:
-
-                r = 0;
-                g = 0;
-                b = 45;
-
-                break;
-            case 10:
-
-                r = 0;
-                g = 0;
-                b = 50;
-
-                break;
-            case 11:
-
-                r = 0;
-                g = 0;
-                b = 55;
-
-                break;
-            case 12:
-
-                r = 0;
-                g = 0;
-                b = 60;
-
-                break;
-            case 13:
-
-                r = 0;
-                g = 0;
-                b = 65;
-
-                break;
-            case 14:
-
-                r = 0;
-                g = 0;
-                b = 70;
-
-                break;
-            case 15:
-
-                r = 0;
-                g = 0;
-                b = 75;
-
-                break;
-            case 16:
-
-                r = 0;
-                g = 0;
-                b = 80;
-
-                break;
-            case 17:
-
-                r = 0;
-                g = 0;
-                b = 85;
-
-                break;
-            case 18:
-
-                r = 0;
-                g = 0;
-                b = 90;
-
-                break;
-            case 19:
-
-                r = 0;
-                g = 0;
-                b = 95;
-
-                break;
-            case 20:
-
-                r = 0;
-                g = 0;
-                b = 100;
-
-                break;
-            case 21:
-
-                r = 0;
-                g = 0;
-                b = 105;
-
-                break;
-            case 22:
-
-                r = 0;
-                g = 0;
-                b = 110;
-
-                break;
-            case 23:
-
-                r = 0;
-                g = 0;
-                b = 115;
-
-                break;
-            case 24:
-
-                r = 0;
-                g = 0;
-                b = 120;
-
-                break;
-            case 25:
-
-                r = 0;
-                g = 0;
-                b = 125;
-
-                break;
-            case 26:
-
-                r = 0;
-                g = 0;
-                b = 130;
-
-                break;
-            case 27:
-
-                r = 0;
-                g = 0;
-                b = 135;
-
-                break;
-            case 28:
-
-                r = 0;
-                g = 0;
-                b = 140;
-
-                break;
-            case 29:
-
-                r = 0;
-                g = 0;
-                b = 145;
-
-                break;
-            case 30:
-
-                r = 0;
-                g = 0;
-                b = 150;
-
-                break;
-            case 31:
-
-                r = 0;
-                g = 0;
-                b = 155;
-
-                break;
-            case 32:
-
-                r = 0;
-                g = 0;
-                b = 160;
-
-                break;
-            case 33:
-
-                r = 0;
-                g = 0;
-                b = 165;
-
-                break;
-            case 34:
-
-                r = 0;
-                g = 0;
-                b = 170;
-
-                break;
-            case 35:
-
-                r = 0;
-                g = 0;
-                b = 175;
-
-                break;
-            case 36:
-
-                r = 0;
-                g = 0;
-                b = 180;
-
-                break;
-            case 37:
-
-                r = 0;
-                g = 0;
-                b = 185;
-
-                break;
-            case 38:
-
-                r = 0;
-                g = 0;
-                b = 190;
-
-                break;
-            case 39:
-
-                r = 0;
-                g = 0;
-                b = 195;
-
-                break;
-            case 40:
-
-                r = 0;
-                g = 0;
-                b = 200;
-
-                break;
-            case 41:
-
-                r = 0;
-                g = 0;
-                b = 205;
-
-                break;
-            case 42:
-
-                r = 0;
-                g = 0;
-                b = 210;
-
-                break;
-            case 43:
-
-                r = 0;
-                g = 0;
-                b = 215;
-
-                break;
-            case 44:
-
-                r = 0;
-                g = 0;
-                b = 220;
-
-                break;
-            case 45:
-
-                r = 0;
-                g = 0;
-                b = 225;
-
-                break;
-            case 46:
-
-                r = 0;
-                g = 0;
-                b = 230;
-
-                break;
-            case 47:
-
-                r = 0;
-                g = 0;
-                b = 235;
-
-                break;
-            case 48:
-
-                r = 0;
-                g = 0;
-                b = 240;
-
-                break;
-            case 49:
-
-                r = 0;
-                g = 0;
-                b = 245;
-
-                break;
-            case 50:
-
-                r = 0;
-                g = 0;
-                b = 250;
-
-                break;
-            case 51:
-
-                r = 0;
-                g = 0;
-                b = 255;
-
-                break;
-            case 52:
-
-                r = 0;
-                g = 3;
-                b = 250;
-
-                break;
-            case 53:
-
-                r = 0;
-                g = 6;
-                b = 245;
-
-                break;
-            case 54:
-
-                r = 0;
-                g = 9;
-                b = 240;
-
-                break;
-            case 55:
-
-                r = 0;
-                g = 12;
-                b = 235;
-
-                break;
-            case 56:
-
-                r = 0;
-                g = 15;
-                b = 230;
-
-                break;
-            case 57:
-
-                r = 0;
-                g = 18;
-                b = 225;
-
-                break;
-            case 58:
-
-                r = 0;
-                g = 21;
-                b = 220;
-
-                break;
-            case 59:
-
-                r = 0;
-                g = 24;
-                b = 215;
-
-                break;
-            case 60:
-
-                r = 0;
-                g = 27;
-                b = 210;
-
-                break;
-            case 61:
-
-                r = 0;
-                g = 30;
-                b = 205;
-
-                break;
-            case 62:
-
-                r = 0;
-                g = 33;
-                b = 200;
-
-                break;
-            case 63:
-
-                r = 0;
-                g = 36;
-                b = 195;
-
-                break;
-
-            //////////////////////////////////////////////////////////
-            case 64:
-
-                r = 0;
-                g = 39;
-                b = 190;
-
-                break;
-            case 65:
-
-                r = 0;
-                g = 42;
-                b = 185;
-
-                break;
-            case 66:
-
-                r = 0;
-                g = 45;
-                b = 180;
-
-                break;
-            case 67:
-
-                r = 0;
-                g = 48;
-                b = 175;
-
-                break;
-            case 68:
-
-                r = 0;
-                g = 51;
-                b = 170;
-
-                break;
-            case 69:
-
-                r = 0;
-                g = 54;
-                b = 165;
-
-                break;
-            case 70:
-
-                r = 0;
-                g = 57;
-                b = 160;
-
-                break;
-            case 71:
-
-                r = 0;
-                g = 60;
-                b = 155;
-
-                break;
-            case 72:
-
-                r = 0;
-                g = 63;
-                b = 150;
-
-                break;
-            case 73:
-
-                r = 0;
-                g = 66;
-                b = 145;
-
-                break;
-            case 74:
-
-                r = 0;
-                g = 69;
-                b = 140;
-
-                break;
-            case 75:
-
-                r = 0;
-                g = 72;
-                b = 135;
-
-                break;
-            case 76:
-
-                r = 0;
-                g = 75;
-                b = 130;
-
-                break;
-            case 77:
-
-                r = 0;
-                g = 78;
-                b = 125;
-
-                break;
-            case 78:
-
-                r = 0;
-                g = 81;
-                b = 120;
-
-                break;
-            case 79:
-
-                r = 0;
-                g = 84;
-                b = 115;
-
-                break;
-            case 80:
-
-                r = 0;
-                g = 87;
-                b = 110;
-
-                break;
-            case 81:
-
-                r = 0;
-                g = 90;
-                b = 105;
-
-                break;
-            case 82:
-
-                r = 0;
-                g = 93;
-                b = 100;
-
-                break;
-            case 83:
-
-                r = 0;
-                g = 96;
-                b = 95;
-
-                break;
-            case 84:
-
-                r = 0;
-                g = 99;
-                b = 90;
-
-                break;
-            case 85:
-
-                r = 0;
-                g = 102;
-                b = 85;
-
-                break;
-            case 86:
-
-                r = 0;
-                g = 105;
-                b = 80;
-
-                break;
-            case 87:
-
-                r = 0;
-                g = 108;
-                b = 75;
-
-                break;
-            case 88:
-
-                r = 0;
-                g = 111;
-                b = 70;
-
-                break;
-            case 89:
-
-                r = 0;
-                g = 114;
-                b = 65;
-
-                break;
-            case 90:
-
-                r = 0;
-                g = 117;
-                b = 60;
-
-                break;
-            case 91:
-
-                r = 0;
-                g = 120;
-                b = 55;
-
-                break;
-            case 92:
-
-                r = 0;
-                g = 123;
-                b = 50;
-
-                break;
-            case 93:
-
-                r = 0;
-                g = 126;
-                b = 45;
-
-                break;
-            case 94:
-
-                r = 0;
-                g = 129;
-                b = 40;
-
-                break;
-            case 95:
-
-                r = 0;
-                g = 132;
-                b = 35;
-
-                break;
-            case 96: ///////////daki///////////////
-
-                r = 0;
-                g = 135;
-                b = 30;
-
-                break;
-            case 97:
-
-                r = 0;
-                g = 138;
-                b = 25;
-
-                break;
-            case 98:
-
-                r = 0;
-                g = 141;
-                b = 20;
-
-                break;
-            case 99:
-
-                r = 0;
-                g = 144;
-                b = 15;
-
-                break;
-            case 100:
-
-                r = 0;
-                g = 147;
-                b = 10;
-
-                break;
-            case 101:
-
-                r = 0;
-                g = 150;
-                b = 5;
-
-                break;
-            case 102:
-
-                r = 0;
-                g = 153;
-                b = 0;
-
-                break;
-            case 103:
-
-                r = 5;
-                g = 150;
-                b = 0;
-
-                break;
-            case 104:
-
-                r = 10;
-                g = 147;
-                b = 0;
-
-                break;
-            case 105:
-
-                r = 15;
-                g = 144;
-                b = 0;
-
-                break;
-            case 106:
-
-                r = 20;
-                g = 141;
-                b = 0;
-
-                break;
-            case 107:
-
-                r = 25;
-                g = 138;
-                b = 0;
-
-                break;
-            case 108:
-
-                r = 30;
-                g = 135;
-                b = 0;
-
-                break;
-            case 109:
-
-                r = 35;
-                g = 132;
-                b = 0;
-
-                break;
-            case 110:
-
-                r = 40;
-                g = 129;
-                b = 0;
-
-                break;
-            case 111:
-
-                r = 45;
-                g = 126;
-                b = 0;
-
-                break;
-            case 112:
-
-                r = 50;
-                g = 123;
-                b = 0;
-
-                break;
-            case 113:
-
-                r = 55;
-                g = 120;
-                b = 0;
-
-                break;
-            case 114:
-
-                r = 60;
-                g = 117;
-                b = 0;
-
-                break;
-            case 115:
-
-                r = 65;
-                g = 114;
-                b = 0;
-
-                break;
-            case 116:
-
-                r = 70;
-                g = 111;
-                b = 0;
-
-                break;
-            case 117:
-
-                r = 75;
-                g = 108;
-                b = 0;
-
-                break;
-            case 118:
-
-                r = 80;
-                g = 105;
-                b = 0;
-
-                break;
-            case 119:
-
-                r = 85;
-                g = 102;
-                b = 0;
-
-                break;
-            case 120:
-
-                r = 90;
-                g = 99;
-                b = 0;
-
-                break;
-            case 121:
-
-                r = 95;
-                g = 96;
-                b = 0;
-
-                break;
-            case 122:
-
-                r = 100;
-                g = 93;
-                b = 0;
-
-                break;
-            case 123:
-
-                r = 105;
-                g = 90;
-                b = 0;
-
-                break;
-            case 124:
-
-                r = 110;
-                g = 87;
-                b = 0;
-
-                break;
-            case 125:
-
-                r = 115;
-                g = 84;
-                b = 0;
-
-                break;
-            case 126:
-
-                r = 120;
-                g = 81;
-                b = 0;
-
-                break;
-            case 127:
-
-                r = 125;
-                g = 78;
-                b = 0;
-
-                break;
-            //////////////////////////////////////////////////////	
-            case 128:
-
-                r = 130;
-                g = 75;
-                b = 0;
-
-                break;
-            case 129:
-
-                r = 135;
-                g = 72;
-                b = 0;
-
-                break;
-            case 130:
-
-                r = 140;
-                g = 69;
-                b = 0;
-
-                break;
-            case 131:
-
-                r = 145;
-                g = 66;
-                b = 0;
-
-                break;
-            case 132:
-
-                r = 150;
-                g = 63;
-                b = 0;
-
-                break;
-            case 133:
-
-                r = 155;
-                g = 60;
-                b = 0;
-
-                break;
-            case 134:
-
-                r = 160;
-                g = 57;
-                b = 0;
-
-                break;
-            case 135:
-
-                r = 165;
-                g = 54;
-                b = 0;
-
-                break;
-            case 136:
-
-                r = 170;
-                g = 51;
-                b = 0;
-
-                break;
-            case 137:
-
-                r = 175;
-                g = 48;
-                b = 0;
-
-                break;
-            case 138:
-
-                r = 180;
-                g = 45;
-                b = 0;
-
-                break;
-            case 139:
-
-                r = 185;
-                g = 42;
-                b = 0;
-
-                break;
-            case 140:
-
-                r = 190;
-                g = 39;
-                b = 0;
-
-                break;
-            case 141:
-
-                r = 195;
-                g = 36;
-                b = 0;
-
-                break;
-            case 142:
-
-                r = 200;
-                g = 33;
-                b = 0;
-
-                break;
-            case 143:
-
-                r = 205;
-                g = 30;
-                b = 0;
-
-                break;
-            case 144:
-
-                r = 210;
-                g = 27;
-                b = 0;
-
-                break;
-            case 145:
-
-                r = 215;
-                g = 24;
-                b = 0;
-
-                break;
-            case 146:
-
-                r = 220;
-                g = 21;
-                b = 0;
-
-                break;
-            case 147:
-
-                r = 225;
-                g = 18;
-                b = 0;
-
-                break;
-            case 148:
-
-                r = 230;
-                g = 15;
-                b = 0;
-
-                break;
-            case 149:
-
-                r = 235;
-                g = 12;
-                b = 0;
-
-                break;
-            case 150:
-
-                r = 240;
-                g = 9;
-                b = 0;
-
-                break;
-            case 151:
-
-                r = 245;
-                g = 6;
-                b = 0;
-
-                break;
-            case 152:
-
-                r = 250;
-                g = 3;
-                b = 0;
-
-                break;
-            case 153:
-
-                r = 255;
-                g = 0;
-                b = 0;
-
-                break;
-            case 154:
-
-                r = 255;
-                g = 5;
-                b = 0;
-
-                break;
-            case 155:
-
-                r = 255;
-                g = 10;
-                b = 0;
-
-                break;
-            case 156:
-
-                r = 255;
-                g = 15;
-                b = 0;
-
-                break;
-            case 157:
-
-                r = 255;
-                g = 20;
-                b = 0;
-
-                break;
-            case 158:
-
-                r = 255;
-                g = 25;
-                b = 0;
-
-                break;
-            case 159:
-
-                r = 255;
-                g = 30;
-                b = 0;
-
-                break;
-            case 160:
-
-                r = 255;
-                g = 35;
-                b = 0;
-
-                break;
-            case 161:
-
-                r = 255;
-                g = 40;
-                b = 0;
-
-                break;
-            case 162:
-
-                r = 255;
-                g = 45;
-                b = 0;
-
-                break;
-            case 163:
-
-                r = 255;
-                g = 50;
-                b = 0;
-
-                break;
-            case 164:
-
-                r = 255;
-                g = 55;
-                b = 0;
-
-                break;
-            case 165:
-
-                r = 255;
-                g = 60;
-                b = 0;
-
-                break;
-            case 166:
-
-                r = 255;
-                g = 65;
-                b = 0;
-
-                break;
-            case 167:
-
-                r = 255;
-                g = 70;
-                b = 0;
-
-                break;
-            case 168:
-
-                r = 255;
-                g = 75;
-                b = 0;
-
-                break;
-            case 169:
-
-                r = 255;
-                g = 80;
-                b = 0;
-
-                break;
-            case 170:
-
-                r = 255;
-                g = 85;
-                b = 0;
-
-                break;
-            case 171:
-
-                r = 255;
-                g = 90;
-                b = 0;
-
-                break;
-            case 172:
-
-                r = 255;
-                g = 95;
-                b = 0;
-
-                break;
-            case 173:
-
-                r = 255;
-                g = 100;
-                b = 0;
-
-                break;
-            case 174:
-
-                r = 255;
-                g = 105;
-                b = 0;
-
-                break;
-            case 175:
-
-                r = 255;
-                g = 110;
-                b = 0;
-
-                break;
-            case 176:
-
-                r = 255;
-                g = 115;
-                b = 0;
-
-                break;
-            case 177:
-
-                r = 255;
-                g = 120;
-                b = 0;
-
-                break;
-            case 178:
-
-                r = 255;
-                g = 125;
-                b = 0;
-
-                break;
-            case 179:
-
-                r = 255;
-                g = 130;
-                b = 0;
-
-                break;
-            case 180:
-
-                r = 255;
-                g = 135;
-                b = 0;
-
-                break;
-            case 181:
-
-                r = 225;
-                g = 140;
-                b = 0;
-
-                break;
-            case 182:
-
-                r = 255;
-                g = 145;
-                b = 0;
-
-                break;
-            case 183:
-
-                r = 255;
-                g = 150;
-                b = 0;
-
-                break;
-            case 184:
-
-                r = 255;
-                g = 155;
-                b = 10;
-
-                break;
-            case 185:
-
-                r = 255;
-                g = 160;
-                b = 0;
-
-                break;
-            case 186:
-
-                r = 255;
-                g = 165;
-                b = 0;
-
-                break;
-            case 187:
-
-                r = 255;
-                g = 170;
-                b = 0;
-
-                break;
-            case 188:
-
-                r = 255;
-                g = 175;
-                b = 0;
-
-                break;
-            case 189:
-
-                r = 255;
-                g = 180;
-                b = 0;
-
-                break;
-            case 190:
-
-                r = 255;
-                g = 185;
-                b = 0;
-
-                break;
-            case 191:
-
-                r = 255;
-                g = 190;
-                b = 0;
-
-                break;
-            ////////////////////////////////////////////////
-            case 192:
-
-                r = 255;
-                g = 195;
-                b = 0;
-
-                break;
-            case 193:
-
-                r = 255;
-                g = 200;
-                b = 0;
-
-                break;
-            case 194:
-
-                r = 255;
-                g = 205;
-                b = 0;
-
-                break;
-            case 195:
-
-                r = 255;
-                g = 210;
-                b = 0;
-
-                break;
-            case 196:
-
-                r = 255;
-                g = 215;
-                b = 0;
-
-                break;
-            case 197:
-
-                r = 255;
-                g = 220;
-                b = 0;
-
-                break;
-            case 198:
-
-                r = 255;
-                g = 225;
-                b = 0;
-
-                break;
-            case 199:
-
-                r = 255;
-                g = 230;
-                b = 0;
-
-                break;
-            case 200:
-
-                r = 255;
-                g = 235;
-                b = 0;
-
-                break;
-            case 201:
-
-                r = 255;
-                g = 240;
-                b = 0;
-
-                break;
-            case 202:
-
-                r = 255;
-                g = 245;
-                b = 0;
-
-                break;
-            case 203:
-
-                r = 255;
-                g = 250;
-                b = 0;
-
-                break;
-            case 204:
-
-                r = 255;
-                g = 255;
-                b = 0;
-
-                break;
-            case 205:
-
-                r = 255;
-                g = 255;
-                b = 5;
-
-                break;
-            case 206:
-
-                r = 255;
-                g = 255;
-                b = 10;
-
-                break;
-            case 207:
-
-                r = 255;
-                g = 255;
-                b = 15;
-
-                break;
-            case 208:
-
-                r = 255;
-                g = 255;
-                b = 20;
-
-                break;
-            case 209:
-
-                r = 255;
-                g = 255;
-                b = 25;
-
-                break;
-            case 210:
-
-                r = 255;
-                g = 255;
-                b = 30;
-
-                break;
-            case 211:
-
-                r = 255;
-                g = 255;
-                b = 35;
-
-                break;
-            case 212:
-
-                r = 255;
-                g = 255;
-                b = 40;
-
-                break;
-            case 213:
-
-                r = 255;
-                g = 255;
-                b = 45;
-
-                break;
-            case 214:
-
-                r = 255;
-                g = 255;
-                b = 50;
-
-                break;
-            case 215:
-
-                r = 255;
-                g = 255;
-                b = 55;
-
-                break;
-            case 216:
-
-                r = 255;
-                g = 255;
-                b = 60;
-
-                break;
-            case 217:
-
-                r = 255;
-                g = 255;
-                b = 65;
-
-                break;
-            case 218:
-
-                r = 255;
-                g = 255;
-                b = 70;
-
-                break;
-            case 219:
-
-                r = 255;
-                g = 255;
-                b = 75;
-
-                break;
-            case 220:
-
-                r = 255;
-                g = 255;
-                b = 80;
-
-                break;
-            case 221:
-
-                r = 255;
-                g = 255;
-                b = 85;
-
-                break;
-            case 222:
-
-                r = 255;
-                g = 255;
-                b = 90;
-
-                break;
-            case 223:
-
-                r = 255;
-                g = 255;
-                b = 95;
-
-                break;
-            case 224:
-
-                r = 255;
-                g = 255;
-                b = 100;
-
-                break;
-            case 225:
-
-                r = 255;
-                g = 255;
-                b = 105;
-
-                break;
-            case 226:
-
-                r = 255;
-                g = 255;
-                b = 110;
-
-                break;
-            case 227:
-
-                r = 255;
-                g = 255;
-                b = 115;
-
-                break;
-            case 228:
-
-                r = 255;
-                g = 255;
-                b = 120;
-
-                break;
-            case 229:
-
-                r = 255;
-                g = 255;
-                b = 125;
-
-                break;
-            case 230:
-
-                r = 255;
-                g = 255;
-                b = 130;
-
-                break;
-            case 231:
-
-                r = 255;
-                g = 255;
-                b = 135;
-
-                break;
-            case 232:
-
-                r = 255;
-                g = 255;
-                b = 140;
-
-                break;
-            case 233:
-
-                r = 255;
-                g = 255;
-                b = 145;
-
-                break;
-            case 234:
-
-                r = 255;
-                g = 255;
-                b = 150;
-
-                break;
-            case 235:
-
-                r = 255;
-                g = 255;
-                b = 155;
-
-                break;
-            case 236:
-
-                r = 255;
-                g = 255;
-                b = 160;
-
-                break;
-            case 237:
-
-                r = 255;
-                g = 255;
-                b = 165;
-
-                break;
-            case 238:
-
-                r = 255;
-                g = 255;
-                b = 170;
-
-                break;
-            case 239:
-
-                r = 255;
-                g = 255;
-                b = 175;
-
-                break;
-            case 240:
-
-                r = 255;
-                g = 255;
-                b = 180;
-
-                break;
-            case 241:
-
-                r = 255;
-                g = 255;
-                b = 185;
-
-                break;
-            case 242:
-
-                r = 255;
-                g = 255;
-                b = 190;
-
-                break;
-            case 243:
-
-                r = 255;
-                g = 255;
-                b = 195;
-
-                break;
-            case 244:
-
-                r = 255;
-                g = 255;
-                b = 200;
-
-                break;
-            case 245:
-
-                r = 255;
-                g = 255;
-                b = 205;
-
-                break;
-            case 246:
-
-                r = 255;
-                g = 255;
-                b = 210;
-
-                break;
-            case 247:
-
-                r = 255;
-                g = 255;
-                b = 215;
-
-                break;
-            case 248:
-
-                r = 255;
-                g = 255;
-                b = 220;
-
-                break;
-            case 249:
-
-                r = 255;
-                g = 255;
-                b = 225;
-
-                break;
-            case 250:
-
-                r = 255;
-                g = 255;
-                b = 230;
-
-                break;
-            case 251:
-
-                r = 255;
-                g = 255;
-                b = 235;
-
-                break;
-            case 252:
-
-                r = 255;
-                g = 255;
-                b = 240;
-
-                break;
-            case 253:
-
-                r = 255;
-                g = 255;
-                b = 245;
-
-                break;
-            case 254:
-
-                r = 255;
-                g = 255;
-                b = 250;
-
-                break;
-            case 255:
-
-                r = 255;
-                g = 255;
-                b = 255;
-
-                break;
-
-            default:
-                break;
-
-        }
-        return [r, g, b];
     }
 
     async function applyEffects() {
 
-        imageList = originalPixels.map(pixel => pixel.slice());
+        state.imageList = state.originalPixels.map(pixel => pixel.slice());
 
-        const sharpenLevel = document.getElementById('sharpness').value;
-        const brightnessLevel = document.getElementById('gama').value;
+        await applyGama(gama.value);
+        await applySharpness(sharpness.value);
 
-        await applyGama(brightnessLevel);
-        await applySharpness(sharpenLevel);
-
-        updateImage(currentImageId);
+        updateImage(state.currentImageId);
     }
 
     //Filtro GAMA
@@ -2730,8 +920,8 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
         gamaValue = 1 - (gamaValue * 0.65);
         if (gamaValue == 0) { return; }
 
-        for (let i = 0; i < imageList.length; i++) {
-            const dicomFileBuffer = await imageList[i].arrayBuffer();
+        for (let i = 0; i < state.imageList.length; i++) {
+            const dicomFileBuffer = await state.imageList[i].arrayBuffer();
             const byteArray = new Uint8Array(dicomFileBuffer);
             const dataSet = dicomParser.parseDicom(byteArray);
             const pixelDataElement = dataSet.elements.x7fe00010;
@@ -2752,52 +942,18 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             newPixelDataArray.set(filteredData);
 
             const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
-            imageList[i] = newBlob;
+            state.imageList[i] = newBlob;
         }
 
     };
-
-    /////////////////////////////
-    //Função genérica para eventos de visibilidade das anotações
-    function handleVisibilityChange(colorCheckbox, color) {
-        editVisibility(color, colorCheckbox.checked);
-
-        const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(imageList[currentImageId]);
-        cornerstone.loadImage(imageId).then(function (image) {
-            const viewport = cornerstone.getDefaultViewportForImage(element, image);
-            cornerstone.displayImage(element, image, viewport);
-            loadAnnotations(currentImageId);
-        });
-    }
-
-    //Evento para a cor amarela
-    osso.addEventListener('change', function () { handleVisibilityChange(osso, 'cyan'); });
-    //Evento para a cor roxa
-    pele.addEventListener('change', function () { handleVisibilityChange(pele, 'lightcoral'); });
-    //Evento para a cor verde
-    orgao.addEventListener('change', function () { handleVisibilityChange(orgao, 'lime'); });
-    //Evento para a cor vermelha
-    perigo.addEventListener('change', function () { handleVisibilityChange(perigo, 'gold'); });
-
-    //Função para editar a visibilidade
-    function editVisibility(color, visible) {
-        for (const element of annotations.states) {
-            for (const annotation of element) {
-                if (annotation.color == color) {
-                    annotation.visible = visible;
-                }
-            }
-        }
-    }
-    /////////////////////////////
 
     //Filtro NITIDEZ
     const applySharpness = async (value) => {
 
         if (value == 0) { return; }
 
-        for (let i = 0; i < imageList.length; i++) {
-            const dicomFileBuffer = await imageList[i].arrayBuffer();
+        for (let i = 0; i < state.imageList.length; i++) {
+            const dicomFileBuffer = await state.imageList[i].arrayBuffer();
             const byteArray = new Uint8Array(dicomFileBuffer);
             const dataSet = dicomParser.parseDicom(byteArray);
             const pixelDataElement = dataSet.elements.x7fe00010;
@@ -2862,14 +1018,16 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             newPixelDataArray.set(filteredData);
 
             const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
-            imageList[i] = newBlob;
+            state.imageList[i] = newBlob;
         }
     };
 
+    ////////////////////
+
     //Função geral para as Máscaras
     const applyMaskToAllImages = async (type, size) => {
-        for (let i = 0; i < imageList.length; i++) {
-            const dicomFileBuffer = await imageList[i].arrayBuffer();
+        for (let i = 0; i < state.imageList.length; i++) {
+            const dicomFileBuffer = await state.imageList[i].arrayBuffer();
             const byteArray = new Uint8Array(dicomFileBuffer);
             const dataSet = dicomParser.parseDicom(byteArray);
             const pixelDataElement = dataSet.elements.x7fe00010;
@@ -2939,9 +1097,9 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             newPixelDataArray.set(filteredData);
 
             const newBlob = new Blob([newDicomBuffer], { type: 'application/dicom' });
-            imageList[i] = newBlob;
+            state.imageList[i] = newBlob;
         }
-        updateImage(currentImageId);
+        updateImage(state.currentImageId);
     }
 
     function applyMask(mask, values) {
@@ -2953,21 +1111,21 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     }
 
     function resetOriginalPixels() {
-        imageList = originalPixels.map(pixel => pixel.slice());
-        const sharpnessSlider = document.getElementById('sharpness');
-        if (sharpnessSlider) {
-            sharpnessSlider.value = 0; // Reset the value
+        state.imageList = state.originalPixels.map(pixel => pixel.slice());
+
+        if (sharpness) {
+            sharpness.value = 0;
         }
 
-        const gamaSlider = document.getElementById('gama');
-        if (gamaSlider) {
-            gamaSlider.value = 0; // Reset the value
+        if (gama) {
+            gama.value = 0;
         }
-        updateImage(currentImageId);
+
+        updateImage(state.currentImageId);
     }
 
     async function getDicomData() {
-        const dicomFileBuffer = await imageList[0].arrayBuffer();
+        const dicomFileBuffer = await state.imageList[0].arrayBuffer();
         const byteArray = new Uint8Array(dicomFileBuffer);
         const dataSet = dicomParser.parseDicom(byteArray);
 
@@ -2995,4 +1153,1860 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
     };
 };
 
-export default ShowFunctions;
+export const Switchs = ({ idSwitchs, colorsImpanted }) => {
+    /////////////////////////////
+    if (idSwitchs && colorsImpanted) {
+        //Função genérica para eventos de visibilidade das anotações
+        function handleVisibilityChange(colorCheckbox, color) {
+            editVisibility(color, colorCheckbox.checked);
+
+            const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(state.imageList[state.currentImageId]);
+            cornerstone.loadImage(imageId).then(function (image) {
+                const viewport = cornerstone.getDefaultViewportForImage(element, image);
+                cornerstone.displayImage(element, image, viewport);
+                loadAnnotations(state.currentImageId);
+            });
+        }
+
+
+        function addSwitchEventListeners() {
+            idSwitchs.forEach((id, index) => {
+                const switchElement = document.getElementById(id);
+                const color = colorsImpanted[index];
+
+                switchElement.addEventListener('change', function () {
+                    handleVisibilityChange(switchElement, color);
+                });
+            });
+        }
+
+        //Função para editar a visibilidade
+        function editVisibility(color, visible) {
+            for (const element of annotations.states) {
+                for (const annotation of element) {
+                    if (annotation.color == color) {
+                        annotation.visible = visible;
+                    }
+                }
+            }
+        }
+
+        addSwitchEventListeners();
+    }
+    /////////
+}
+
+function loadAnnotations(imageId) {
+    if (annotations.states[imageId]) {
+        for (const annotation of annotations.states[imageId]) {
+            cornerstoneTools.addToolState(element, note, annotation);
+        }
+    }
+}
+
+const pseudoColor = (value) => {
+    let r, g, b;
+    switch (value) {
+        case 0:   //               0-R, 1-G, 2-B
+            r = 0;
+            g = 0;
+            b = 0;
+            break;
+        case 1:
+
+            r = 0;
+            g = 0;
+            b = 5;
+
+            break;
+        case 2:
+
+            r = 0;
+            g = 0;
+            b = 10;
+
+            break;
+        case 3:
+
+            r = 0;
+            g = 0;
+            b = 15;
+
+            break;
+        case 4:
+
+            r = 0;
+            g = 0;
+            b = 20;
+
+            break;
+        case 5:
+
+            r = 0;
+            g = 0;
+            b = 25;
+
+            break;
+        case 6:
+
+            r = 0;
+            g = 0;
+            b = 30;
+
+            break;
+        case 7:
+
+            r = 0;
+            g = 0;
+            b = 35;
+
+            break;
+        case 8:
+
+            r = 0;
+            g = 0;
+            b = 40;
+
+            break;
+        case 9:
+
+            r = 0;
+            g = 0;
+            b = 45;
+
+            break;
+        case 10:
+
+            r = 0;
+            g = 0;
+            b = 50;
+
+            break;
+        case 11:
+
+            r = 0;
+            g = 0;
+            b = 55;
+
+            break;
+        case 12:
+
+            r = 0;
+            g = 0;
+            b = 60;
+
+            break;
+        case 13:
+
+            r = 0;
+            g = 0;
+            b = 65;
+
+            break;
+        case 14:
+
+            r = 0;
+            g = 0;
+            b = 70;
+
+            break;
+        case 15:
+
+            r = 0;
+            g = 0;
+            b = 75;
+
+            break;
+        case 16:
+
+            r = 0;
+            g = 0;
+            b = 80;
+
+            break;
+        case 17:
+
+            r = 0;
+            g = 0;
+            b = 85;
+
+            break;
+        case 18:
+
+            r = 0;
+            g = 0;
+            b = 90;
+
+            break;
+        case 19:
+
+            r = 0;
+            g = 0;
+            b = 95;
+
+            break;
+        case 20:
+
+            r = 0;
+            g = 0;
+            b = 100;
+
+            break;
+        case 21:
+
+            r = 0;
+            g = 0;
+            b = 105;
+
+            break;
+        case 22:
+
+            r = 0;
+            g = 0;
+            b = 110;
+
+            break;
+        case 23:
+
+            r = 0;
+            g = 0;
+            b = 115;
+
+            break;
+        case 24:
+
+            r = 0;
+            g = 0;
+            b = 120;
+
+            break;
+        case 25:
+
+            r = 0;
+            g = 0;
+            b = 125;
+
+            break;
+        case 26:
+
+            r = 0;
+            g = 0;
+            b = 130;
+
+            break;
+        case 27:
+
+            r = 0;
+            g = 0;
+            b = 135;
+
+            break;
+        case 28:
+
+            r = 0;
+            g = 0;
+            b = 140;
+
+            break;
+        case 29:
+
+            r = 0;
+            g = 0;
+            b = 145;
+
+            break;
+        case 30:
+
+            r = 0;
+            g = 0;
+            b = 150;
+
+            break;
+        case 31:
+
+            r = 0;
+            g = 0;
+            b = 155;
+
+            break;
+        case 32:
+
+            r = 0;
+            g = 0;
+            b = 160;
+
+            break;
+        case 33:
+
+            r = 0;
+            g = 0;
+            b = 165;
+
+            break;
+        case 34:
+
+            r = 0;
+            g = 0;
+            b = 170;
+
+            break;
+        case 35:
+
+            r = 0;
+            g = 0;
+            b = 175;
+
+            break;
+        case 36:
+
+            r = 0;
+            g = 0;
+            b = 180;
+
+            break;
+        case 37:
+
+            r = 0;
+            g = 0;
+            b = 185;
+
+            break;
+        case 38:
+
+            r = 0;
+            g = 0;
+            b = 190;
+
+            break;
+        case 39:
+
+            r = 0;
+            g = 0;
+            b = 195;
+
+            break;
+        case 40:
+
+            r = 0;
+            g = 0;
+            b = 200;
+
+            break;
+        case 41:
+
+            r = 0;
+            g = 0;
+            b = 205;
+
+            break;
+        case 42:
+
+            r = 0;
+            g = 0;
+            b = 210;
+
+            break;
+        case 43:
+
+            r = 0;
+            g = 0;
+            b = 215;
+
+            break;
+        case 44:
+
+            r = 0;
+            g = 0;
+            b = 220;
+
+            break;
+        case 45:
+
+            r = 0;
+            g = 0;
+            b = 225;
+
+            break;
+        case 46:
+
+            r = 0;
+            g = 0;
+            b = 230;
+
+            break;
+        case 47:
+
+            r = 0;
+            g = 0;
+            b = 235;
+
+            break;
+        case 48:
+
+            r = 0;
+            g = 0;
+            b = 240;
+
+            break;
+        case 49:
+
+            r = 0;
+            g = 0;
+            b = 245;
+
+            break;
+        case 50:
+
+            r = 0;
+            g = 0;
+            b = 250;
+
+            break;
+        case 51:
+
+            r = 0;
+            g = 0;
+            b = 255;
+
+            break;
+        case 52:
+
+            r = 0;
+            g = 3;
+            b = 250;
+
+            break;
+        case 53:
+
+            r = 0;
+            g = 6;
+            b = 245;
+
+            break;
+        case 54:
+
+            r = 0;
+            g = 9;
+            b = 240;
+
+            break;
+        case 55:
+
+            r = 0;
+            g = 12;
+            b = 235;
+
+            break;
+        case 56:
+
+            r = 0;
+            g = 15;
+            b = 230;
+
+            break;
+        case 57:
+
+            r = 0;
+            g = 18;
+            b = 225;
+
+            break;
+        case 58:
+
+            r = 0;
+            g = 21;
+            b = 220;
+
+            break;
+        case 59:
+
+            r = 0;
+            g = 24;
+            b = 215;
+
+            break;
+        case 60:
+
+            r = 0;
+            g = 27;
+            b = 210;
+
+            break;
+        case 61:
+
+            r = 0;
+            g = 30;
+            b = 205;
+
+            break;
+        case 62:
+
+            r = 0;
+            g = 33;
+            b = 200;
+
+            break;
+        case 63:
+
+            r = 0;
+            g = 36;
+            b = 195;
+
+            break;
+
+        //////////////////////////////////////////////////////////
+        case 64:
+
+            r = 0;
+            g = 39;
+            b = 190;
+
+            break;
+        case 65:
+
+            r = 0;
+            g = 42;
+            b = 185;
+
+            break;
+        case 66:
+
+            r = 0;
+            g = 45;
+            b = 180;
+
+            break;
+        case 67:
+
+            r = 0;
+            g = 48;
+            b = 175;
+
+            break;
+        case 68:
+
+            r = 0;
+            g = 51;
+            b = 170;
+
+            break;
+        case 69:
+
+            r = 0;
+            g = 54;
+            b = 165;
+
+            break;
+        case 70:
+
+            r = 0;
+            g = 57;
+            b = 160;
+
+            break;
+        case 71:
+
+            r = 0;
+            g = 60;
+            b = 155;
+
+            break;
+        case 72:
+
+            r = 0;
+            g = 63;
+            b = 150;
+
+            break;
+        case 73:
+
+            r = 0;
+            g = 66;
+            b = 145;
+
+            break;
+        case 74:
+
+            r = 0;
+            g = 69;
+            b = 140;
+
+            break;
+        case 75:
+
+            r = 0;
+            g = 72;
+            b = 135;
+
+            break;
+        case 76:
+
+            r = 0;
+            g = 75;
+            b = 130;
+
+            break;
+        case 77:
+
+            r = 0;
+            g = 78;
+            b = 125;
+
+            break;
+        case 78:
+
+            r = 0;
+            g = 81;
+            b = 120;
+
+            break;
+        case 79:
+
+            r = 0;
+            g = 84;
+            b = 115;
+
+            break;
+        case 80:
+
+            r = 0;
+            g = 87;
+            b = 110;
+
+            break;
+        case 81:
+
+            r = 0;
+            g = 90;
+            b = 105;
+
+            break;
+        case 82:
+
+            r = 0;
+            g = 93;
+            b = 100;
+
+            break;
+        case 83:
+
+            r = 0;
+            g = 96;
+            b = 95;
+
+            break;
+        case 84:
+
+            r = 0;
+            g = 99;
+            b = 90;
+
+            break;
+        case 85:
+
+            r = 0;
+            g = 102;
+            b = 85;
+
+            break;
+        case 86:
+
+            r = 0;
+            g = 105;
+            b = 80;
+
+            break;
+        case 87:
+
+            r = 0;
+            g = 108;
+            b = 75;
+
+            break;
+        case 88:
+
+            r = 0;
+            g = 111;
+            b = 70;
+
+            break;
+        case 89:
+
+            r = 0;
+            g = 114;
+            b = 65;
+
+            break;
+        case 90:
+
+            r = 0;
+            g = 117;
+            b = 60;
+
+            break;
+        case 91:
+
+            r = 0;
+            g = 120;
+            b = 55;
+
+            break;
+        case 92:
+
+            r = 0;
+            g = 123;
+            b = 50;
+
+            break;
+        case 93:
+
+            r = 0;
+            g = 126;
+            b = 45;
+
+            break;
+        case 94:
+
+            r = 0;
+            g = 129;
+            b = 40;
+
+            break;
+        case 95:
+
+            r = 0;
+            g = 132;
+            b = 35;
+
+            break;
+        case 96: ///////////daki///////////////
+
+            r = 0;
+            g = 135;
+            b = 30;
+
+            break;
+        case 97:
+
+            r = 0;
+            g = 138;
+            b = 25;
+
+            break;
+        case 98:
+
+            r = 0;
+            g = 141;
+            b = 20;
+
+            break;
+        case 99:
+
+            r = 0;
+            g = 144;
+            b = 15;
+
+            break;
+        case 100:
+
+            r = 0;
+            g = 147;
+            b = 10;
+
+            break;
+        case 101:
+
+            r = 0;
+            g = 150;
+            b = 5;
+
+            break;
+        case 102:
+
+            r = 0;
+            g = 153;
+            b = 0;
+
+            break;
+        case 103:
+
+            r = 5;
+            g = 150;
+            b = 0;
+
+            break;
+        case 104:
+
+            r = 10;
+            g = 147;
+            b = 0;
+
+            break;
+        case 105:
+
+            r = 15;
+            g = 144;
+            b = 0;
+
+            break;
+        case 106:
+
+            r = 20;
+            g = 141;
+            b = 0;
+
+            break;
+        case 107:
+
+            r = 25;
+            g = 138;
+            b = 0;
+
+            break;
+        case 108:
+
+            r = 30;
+            g = 135;
+            b = 0;
+
+            break;
+        case 109:
+
+            r = 35;
+            g = 132;
+            b = 0;
+
+            break;
+        case 110:
+
+            r = 40;
+            g = 129;
+            b = 0;
+
+            break;
+        case 111:
+
+            r = 45;
+            g = 126;
+            b = 0;
+
+            break;
+        case 112:
+
+            r = 50;
+            g = 123;
+            b = 0;
+
+            break;
+        case 113:
+
+            r = 55;
+            g = 120;
+            b = 0;
+
+            break;
+        case 114:
+
+            r = 60;
+            g = 117;
+            b = 0;
+
+            break;
+        case 115:
+
+            r = 65;
+            g = 114;
+            b = 0;
+
+            break;
+        case 116:
+
+            r = 70;
+            g = 111;
+            b = 0;
+
+            break;
+        case 117:
+
+            r = 75;
+            g = 108;
+            b = 0;
+
+            break;
+        case 118:
+
+            r = 80;
+            g = 105;
+            b = 0;
+
+            break;
+        case 119:
+
+            r = 85;
+            g = 102;
+            b = 0;
+
+            break;
+        case 120:
+
+            r = 90;
+            g = 99;
+            b = 0;
+
+            break;
+        case 121:
+
+            r = 95;
+            g = 96;
+            b = 0;
+
+            break;
+        case 122:
+
+            r = 100;
+            g = 93;
+            b = 0;
+
+            break;
+        case 123:
+
+            r = 105;
+            g = 90;
+            b = 0;
+
+            break;
+        case 124:
+
+            r = 110;
+            g = 87;
+            b = 0;
+
+            break;
+        case 125:
+
+            r = 115;
+            g = 84;
+            b = 0;
+
+            break;
+        case 126:
+
+            r = 120;
+            g = 81;
+            b = 0;
+
+            break;
+        case 127:
+
+            r = 125;
+            g = 78;
+            b = 0;
+
+            break;
+        //////////////////////////////////////////////////////	
+        case 128:
+
+            r = 130;
+            g = 75;
+            b = 0;
+
+            break;
+        case 129:
+
+            r = 135;
+            g = 72;
+            b = 0;
+
+            break;
+        case 130:
+
+            r = 140;
+            g = 69;
+            b = 0;
+
+            break;
+        case 131:
+
+            r = 145;
+            g = 66;
+            b = 0;
+
+            break;
+        case 132:
+
+            r = 150;
+            g = 63;
+            b = 0;
+
+            break;
+        case 133:
+
+            r = 155;
+            g = 60;
+            b = 0;
+
+            break;
+        case 134:
+
+            r = 160;
+            g = 57;
+            b = 0;
+
+            break;
+        case 135:
+
+            r = 165;
+            g = 54;
+            b = 0;
+
+            break;
+        case 136:
+
+            r = 170;
+            g = 51;
+            b = 0;
+
+            break;
+        case 137:
+
+            r = 175;
+            g = 48;
+            b = 0;
+
+            break;
+        case 138:
+
+            r = 180;
+            g = 45;
+            b = 0;
+
+            break;
+        case 139:
+
+            r = 185;
+            g = 42;
+            b = 0;
+
+            break;
+        case 140:
+
+            r = 190;
+            g = 39;
+            b = 0;
+
+            break;
+        case 141:
+
+            r = 195;
+            g = 36;
+            b = 0;
+
+            break;
+        case 142:
+
+            r = 200;
+            g = 33;
+            b = 0;
+
+            break;
+        case 143:
+
+            r = 205;
+            g = 30;
+            b = 0;
+
+            break;
+        case 144:
+
+            r = 210;
+            g = 27;
+            b = 0;
+
+            break;
+        case 145:
+
+            r = 215;
+            g = 24;
+            b = 0;
+
+            break;
+        case 146:
+
+            r = 220;
+            g = 21;
+            b = 0;
+
+            break;
+        case 147:
+
+            r = 225;
+            g = 18;
+            b = 0;
+
+            break;
+        case 148:
+
+            r = 230;
+            g = 15;
+            b = 0;
+
+            break;
+        case 149:
+
+            r = 235;
+            g = 12;
+            b = 0;
+
+            break;
+        case 150:
+
+            r = 240;
+            g = 9;
+            b = 0;
+
+            break;
+        case 151:
+
+            r = 245;
+            g = 6;
+            b = 0;
+
+            break;
+        case 152:
+
+            r = 250;
+            g = 3;
+            b = 0;
+
+            break;
+        case 153:
+
+            r = 255;
+            g = 0;
+            b = 0;
+
+            break;
+        case 154:
+
+            r = 255;
+            g = 5;
+            b = 0;
+
+            break;
+        case 155:
+
+            r = 255;
+            g = 10;
+            b = 0;
+
+            break;
+        case 156:
+
+            r = 255;
+            g = 15;
+            b = 0;
+
+            break;
+        case 157:
+
+            r = 255;
+            g = 20;
+            b = 0;
+
+            break;
+        case 158:
+
+            r = 255;
+            g = 25;
+            b = 0;
+
+            break;
+        case 159:
+
+            r = 255;
+            g = 30;
+            b = 0;
+
+            break;
+        case 160:
+
+            r = 255;
+            g = 35;
+            b = 0;
+
+            break;
+        case 161:
+
+            r = 255;
+            g = 40;
+            b = 0;
+
+            break;
+        case 162:
+
+            r = 255;
+            g = 45;
+            b = 0;
+
+            break;
+        case 163:
+
+            r = 255;
+            g = 50;
+            b = 0;
+
+            break;
+        case 164:
+
+            r = 255;
+            g = 55;
+            b = 0;
+
+            break;
+        case 165:
+
+            r = 255;
+            g = 60;
+            b = 0;
+
+            break;
+        case 166:
+
+            r = 255;
+            g = 65;
+            b = 0;
+
+            break;
+        case 167:
+
+            r = 255;
+            g = 70;
+            b = 0;
+
+            break;
+        case 168:
+
+            r = 255;
+            g = 75;
+            b = 0;
+
+            break;
+        case 169:
+
+            r = 255;
+            g = 80;
+            b = 0;
+
+            break;
+        case 170:
+
+            r = 255;
+            g = 85;
+            b = 0;
+
+            break;
+        case 171:
+
+            r = 255;
+            g = 90;
+            b = 0;
+
+            break;
+        case 172:
+
+            r = 255;
+            g = 95;
+            b = 0;
+
+            break;
+        case 173:
+
+            r = 255;
+            g = 100;
+            b = 0;
+
+            break;
+        case 174:
+
+            r = 255;
+            g = 105;
+            b = 0;
+
+            break;
+        case 175:
+
+            r = 255;
+            g = 110;
+            b = 0;
+
+            break;
+        case 176:
+
+            r = 255;
+            g = 115;
+            b = 0;
+
+            break;
+        case 177:
+
+            r = 255;
+            g = 120;
+            b = 0;
+
+            break;
+        case 178:
+
+            r = 255;
+            g = 125;
+            b = 0;
+
+            break;
+        case 179:
+
+            r = 255;
+            g = 130;
+            b = 0;
+
+            break;
+        case 180:
+
+            r = 255;
+            g = 135;
+            b = 0;
+
+            break;
+        case 181:
+
+            r = 225;
+            g = 140;
+            b = 0;
+
+            break;
+        case 182:
+
+            r = 255;
+            g = 145;
+            b = 0;
+
+            break;
+        case 183:
+
+            r = 255;
+            g = 150;
+            b = 0;
+
+            break;
+        case 184:
+
+            r = 255;
+            g = 155;
+            b = 10;
+
+            break;
+        case 185:
+
+            r = 255;
+            g = 160;
+            b = 0;
+
+            break;
+        case 186:
+
+            r = 255;
+            g = 165;
+            b = 0;
+
+            break;
+        case 187:
+
+            r = 255;
+            g = 170;
+            b = 0;
+
+            break;
+        case 188:
+
+            r = 255;
+            g = 175;
+            b = 0;
+
+            break;
+        case 189:
+
+            r = 255;
+            g = 180;
+            b = 0;
+
+            break;
+        case 190:
+
+            r = 255;
+            g = 185;
+            b = 0;
+
+            break;
+        case 191:
+
+            r = 255;
+            g = 190;
+            b = 0;
+
+            break;
+        ////////////////////////////////////////////////
+        case 192:
+
+            r = 255;
+            g = 195;
+            b = 0;
+
+            break;
+        case 193:
+
+            r = 255;
+            g = 200;
+            b = 0;
+
+            break;
+        case 194:
+
+            r = 255;
+            g = 205;
+            b = 0;
+
+            break;
+        case 195:
+
+            r = 255;
+            g = 210;
+            b = 0;
+
+            break;
+        case 196:
+
+            r = 255;
+            g = 215;
+            b = 0;
+
+            break;
+        case 197:
+
+            r = 255;
+            g = 220;
+            b = 0;
+
+            break;
+        case 198:
+
+            r = 255;
+            g = 225;
+            b = 0;
+
+            break;
+        case 199:
+
+            r = 255;
+            g = 230;
+            b = 0;
+
+            break;
+        case 200:
+
+            r = 255;
+            g = 235;
+            b = 0;
+
+            break;
+        case 201:
+
+            r = 255;
+            g = 240;
+            b = 0;
+
+            break;
+        case 202:
+
+            r = 255;
+            g = 245;
+            b = 0;
+
+            break;
+        case 203:
+
+            r = 255;
+            g = 250;
+            b = 0;
+
+            break;
+        case 204:
+
+            r = 255;
+            g = 255;
+            b = 0;
+
+            break;
+        case 205:
+
+            r = 255;
+            g = 255;
+            b = 5;
+
+            break;
+        case 206:
+
+            r = 255;
+            g = 255;
+            b = 10;
+
+            break;
+        case 207:
+
+            r = 255;
+            g = 255;
+            b = 15;
+
+            break;
+        case 208:
+
+            r = 255;
+            g = 255;
+            b = 20;
+
+            break;
+        case 209:
+
+            r = 255;
+            g = 255;
+            b = 25;
+
+            break;
+        case 210:
+
+            r = 255;
+            g = 255;
+            b = 30;
+
+            break;
+        case 211:
+
+            r = 255;
+            g = 255;
+            b = 35;
+
+            break;
+        case 212:
+
+            r = 255;
+            g = 255;
+            b = 40;
+
+            break;
+        case 213:
+
+            r = 255;
+            g = 255;
+            b = 45;
+
+            break;
+        case 214:
+
+            r = 255;
+            g = 255;
+            b = 50;
+
+            break;
+        case 215:
+
+            r = 255;
+            g = 255;
+            b = 55;
+
+            break;
+        case 216:
+
+            r = 255;
+            g = 255;
+            b = 60;
+
+            break;
+        case 217:
+
+            r = 255;
+            g = 255;
+            b = 65;
+
+            break;
+        case 218:
+
+            r = 255;
+            g = 255;
+            b = 70;
+
+            break;
+        case 219:
+
+            r = 255;
+            g = 255;
+            b = 75;
+
+            break;
+        case 220:
+
+            r = 255;
+            g = 255;
+            b = 80;
+
+            break;
+        case 221:
+
+            r = 255;
+            g = 255;
+            b = 85;
+
+            break;
+        case 222:
+
+            r = 255;
+            g = 255;
+            b = 90;
+
+            break;
+        case 223:
+
+            r = 255;
+            g = 255;
+            b = 95;
+
+            break;
+        case 224:
+
+            r = 255;
+            g = 255;
+            b = 100;
+
+            break;
+        case 225:
+
+            r = 255;
+            g = 255;
+            b = 105;
+
+            break;
+        case 226:
+
+            r = 255;
+            g = 255;
+            b = 110;
+
+            break;
+        case 227:
+
+            r = 255;
+            g = 255;
+            b = 115;
+
+            break;
+        case 228:
+
+            r = 255;
+            g = 255;
+            b = 120;
+
+            break;
+        case 229:
+
+            r = 255;
+            g = 255;
+            b = 125;
+
+            break;
+        case 230:
+
+            r = 255;
+            g = 255;
+            b = 130;
+
+            break;
+        case 231:
+
+            r = 255;
+            g = 255;
+            b = 135;
+
+            break;
+        case 232:
+
+            r = 255;
+            g = 255;
+            b = 140;
+
+            break;
+        case 233:
+
+            r = 255;
+            g = 255;
+            b = 145;
+
+            break;
+        case 234:
+
+            r = 255;
+            g = 255;
+            b = 150;
+
+            break;
+        case 235:
+
+            r = 255;
+            g = 255;
+            b = 155;
+
+            break;
+        case 236:
+
+            r = 255;
+            g = 255;
+            b = 160;
+
+            break;
+        case 237:
+
+            r = 255;
+            g = 255;
+            b = 165;
+
+            break;
+        case 238:
+
+            r = 255;
+            g = 255;
+            b = 170;
+
+            break;
+        case 239:
+
+            r = 255;
+            g = 255;
+            b = 175;
+
+            break;
+        case 240:
+
+            r = 255;
+            g = 255;
+            b = 180;
+
+            break;
+        case 241:
+
+            r = 255;
+            g = 255;
+            b = 185;
+
+            break;
+        case 242:
+
+            r = 255;
+            g = 255;
+            b = 190;
+
+            break;
+        case 243:
+
+            r = 255;
+            g = 255;
+            b = 195;
+
+            break;
+        case 244:
+
+            r = 255;
+            g = 255;
+            b = 200;
+
+            break;
+        case 245:
+
+            r = 255;
+            g = 255;
+            b = 205;
+
+            break;
+        case 246:
+
+            r = 255;
+            g = 255;
+            b = 210;
+
+            break;
+        case 247:
+
+            r = 255;
+            g = 255;
+            b = 215;
+
+            break;
+        case 248:
+
+            r = 255;
+            g = 255;
+            b = 220;
+
+            break;
+        case 249:
+
+            r = 255;
+            g = 255;
+            b = 225;
+
+            break;
+        case 250:
+
+            r = 255;
+            g = 255;
+            b = 230;
+
+            break;
+        case 251:
+
+            r = 255;
+            g = 255;
+            b = 235;
+
+            break;
+        case 252:
+
+            r = 255;
+            g = 255;
+            b = 240;
+
+            break;
+        case 253:
+
+            r = 255;
+            g = 255;
+            b = 245;
+
+            break;
+        case 254:
+
+            r = 255;
+            g = 255;
+            b = 250;
+
+            break;
+        case 255:
+
+            r = 255;
+            g = 255;
+            b = 255;
+
+            break;
+
+        default:
+            break;
+
+    }
+    return [r, g, b];
+}
+
+export default [ShowFunctions, Switchs];

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { colorNames } from '../ColorArrays';
 import ColorSelect from './ColorSelect';
 
-export const Annotations = ({ onSave }) => {
+export const ToolsShowDicom = ({ onSave }) => {
     const [open, setOpen] = useState(false);
     const [annotationName, setAnnotationName] = useState('');
     const [annotationColor, setAnnotationColor] = useState('');
@@ -50,6 +50,7 @@ export const Annotations = ({ onSave }) => {
             onSave(newAnnotation);
         }
         setAnnotationName('');
+        setAnnotationColor(getRandomAvailableColor());
         setError('');
         setOpen(false);
     };
@@ -70,7 +71,7 @@ export const Annotations = ({ onSave }) => {
     return (
         <aside className="h-full w-full sm:w-[40%] lg:w-[30%] xl:w-[20%] flex flex-col bg-white border-l-2 border-gray-400">
             <Box role="presentation">
-                <label htmlFor="" className="flex block b-2 text-lg items-center justify-center font-bold p-4 text-gray-900"> Anotações </label>
+                <label htmlFor="" className="flex b-2 text-lg items-center justify-center font-bold p-4 text-gray-900"> Anotações </label>
                 <label htmlFor="typeSpecie" className="block b-2 text-sm font-medium p-4 text-gray-900">Selecione uma Anotação</label>
                 <select
                     id="typeSpecie"

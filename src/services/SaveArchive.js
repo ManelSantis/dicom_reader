@@ -16,6 +16,7 @@ export async function addArchive(archiveData) {
             body: JSON.stringify(archiveData)
         });
 
+
         if (!response.ok) {
             throw new Error('Erro ao adicionar arquivo.');
         }
