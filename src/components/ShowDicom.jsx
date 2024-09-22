@@ -1,4 +1,3 @@
-import BrushIcon from '@mui/icons-material/Brush';
 import ImageSearch from '@mui/icons-material/ImageSearch';
 import InfoIcon from '@mui/icons-material/Info';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -104,8 +103,8 @@ export const ShowDicom = () => {
     useEffect(() => {
 
         if (archiveData && archiveData.nameSwitchs && archiveData.idSwitchs && archiveData.colorsImpanted && archiveData.typeAnnotationsImplanted) {
-        console.log(archive_id)
-           
+            console.log(archive_id)
+
             const newAnnotations = archiveData.nameSwitchs.map((name, index) => ({
                 name,
                 color: archiveData.colorsImpanted[index],
@@ -126,7 +125,7 @@ export const ShowDicom = () => {
     return (
         <>
             {pseudoColor && (
-                <ResizableDraggableDiv cover={archiveData.archive_cover}/>
+                <ResizableDraggableDiv cover={archiveData.archive_cover} />
             )}
             <div style={{ height: newHeight + 'px' }} className="flex w-full items-center bg-black" onContextMenu={() => false}>
                 <div className='w-[80%] h-full'>
@@ -134,7 +133,7 @@ export const ShowDicom = () => {
                         <div id="dicomImage" className="w-[99%] h-[97%] bg-blue-400 relative">
                             <div className='flex flex-col absolute top-[2%] left-[1%] z-20 space-y-2'>
                                 <Fab color="success" id='pseudo' onClick={togglePseudoColor}>
-                                    <BrushIcon />
+                                    <ImageSearch />
                                 </Fab>
                                 <input type="file" id="fileInput" accept=".dcm" multiple className="hidden" ref={null} />
                                 <Fab color="error" id="reset" onClick={handleReset}>
@@ -144,9 +143,6 @@ export const ShowDicom = () => {
                             <div className='flex flex-col absolute top-[2%] right-[1%] z-20 space-y-2'>
                                 <Fab color="info" id="show" onClick={showInformationsFunction}>
                                     <InfoIcon />
-                                </Fab>
-                                <Fab color="info" id="cover">
-                                    <ImageSearch />
                                 </Fab>
                             </div>
                         </div>

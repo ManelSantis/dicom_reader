@@ -6,13 +6,15 @@ import { useParams } from 'react-router-dom';
 import { getArchiveById } from '../services/GetArchive';
 import { Annotations } from './EditExistComponents/Annotations';
 import { Editor } from './EditExistComponents/Editor';
-import { EditExistFunctions, Switchs, newTypeAnnotation } from './EditExistFunctions';
+import { EditExistFunctions, Switchs, handleEdit, newTypeAnnotation } from './EditExistFunctions';
 
 export const EditExist = () => {
     const { archive_id } = useParams();
     const [archiveData, setArchiveData] = useState({});
     const [newHeight, setNewHeight] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState('');
     const [progress, setProgress] = useState(0);
     const [progressMessage, setProgressMessage] = useState('');
     const [showInformations, setShowInformations] = useState(false);
@@ -25,7 +27,7 @@ export const EditExist = () => {
     const [annotations, setAnnotations] = useState([]);
     const [dataFetched, setDataFetched] = useState(false);
     const [switchAdd, setSwitchAdd] = useState(false);
-
+    const [archives, setArchives] = useState([]);
 
     const fetchData = async () => {
         try {
@@ -68,7 +70,7 @@ export const EditExist = () => {
         const colorsImpanted = archiveData.colorsImpanted;
 
         Switchs({ idSwitchs, colorsImpanted });
-        
+
     }, [annotations, switchAdd]);
 
     useEffect(() => {
@@ -112,6 +114,11 @@ export const EditExist = () => {
         newTypeAnnotation({ annotation });
     };
 
+    const handleArchiveEdit = (archive) => {
+        setArchives(prev => [...prev, archive]);
+        handleEdit({setIsSaving, setProgressMessage, setSaveMessage, archive, archive_id});
+    }
+
     return (
         <div style={{ height: newHeight + 'px' }} className="flex w-full bg-slate-700">
             <div className="w-[80%] h-full">
@@ -122,10 +129,22 @@ export const EditExist = () => {
                     </Stack>
                 </div>
             </div>
-            <Annotations onSave={handleAnnotationSave} idSwitchs={archiveData.idSwitchs} colorsImplanted={archiveData.colorsImpanted} typeAnnotationsImplanted={archiveData.typeAnnotationsImplanted} nameSwitchs={archiveData.nameSwitchs} />
+            <Annotations
+                onSave={handleAnnotationSave}
+                idSwitchs={archiveData.idSwitchs}
+                colorsImplanted={archiveData.colorsImpanted}
+                typeAnnotationsImplanted={archiveData.typeAnnotationsImplanted}
+                nameSwitchs={archiveData.nameSwitchs} archiveData={archiveData}
+                archiveEdit={handleArchiveEdit} />
             {isLoading && (
                 <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
                     <Typography variant="h6" color="white" gutterBottom>Carregando...</Typography>
+                    <CircularProgress />
+                </div>
+            )}
+            {isSaving && (
+                <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
+                    <Typography variant="h6" color="white" gutterBottom>{progressMessage}</Typography>
                     <CircularProgress />
                 </div>
             )}

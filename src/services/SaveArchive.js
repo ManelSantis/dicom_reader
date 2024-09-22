@@ -84,3 +84,30 @@ export async function addNote(noteData, image_id) {
         throw error;
     }
 }
+
+export async function updateArchive (archiveData, archive_id) {
+    try {
+        const token = getToken();
+        const response = await fetch(queries.dataBaseURL + 'api/v1/archive/' + archive_id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(archiveData)
+        });
+
+
+        if (!response.ok) {
+            throw new Error('Erro ao adicionar arquivo.');
+        }
+
+        const responseData = await response.json();
+        const jsonData = JSON.parse(responseData);
+        console.log(jsonData)
+        return jsonData;
+    } catch (error) {
+        console.error('Erro:', error.message);
+        throw error;
+    }
+}
