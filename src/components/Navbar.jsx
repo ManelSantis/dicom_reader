@@ -54,6 +54,7 @@ export const Navbar = () => {
                             </div>
                         )}
                     </div>
+                    <Link className='text-[#F1FAEE] hover:underline' >Ajuda</Link>
                 </div>
                 <div className="flex items-center">
                     {isLogin ? (

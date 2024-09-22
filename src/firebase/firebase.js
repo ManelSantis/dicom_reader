@@ -58,4 +58,36 @@ async function uploadArrayBuffer(arrayBuffer, nomeArquivo, nomePasta) {
     }
 }
 
-export { storage, uploadArrayBuffer };
+// Função para upload da capa
+async function uploadCover(coverFile, id) {
+    try {
+        const db = getFirestore();
+        const storage = getStorage();
+
+        // Cria a referência para a capa no Storage, com o nome 'capa{id}'
+        const coverRef = ref(storage, `capas/capa${id}`);
+
+        // Faz o upload da capa para o Storage
+        const snapshot = await uploadBytes(coverRef, coverFile);
+        console.log("Upload da capa concluído:", snapshot);
+
+        // Obtém a URL de download da capa
+        const coverDownloadURL = await getDownloadURL(coverRef);
+
+        // Adiciona a URL da capa ao documento no Firestore
+        const docRef = await addDoc(collection(db, 'archives'), {
+            id: id, 
+            capaUrl: coverDownloadURL, 
+            timestamp: new Date(), 
+        });
+
+        console.log("Documento com capa adicionado com ID:", docRef.id);
+        return coverDownloadURL;
+    } catch (error) {
+        console.error("Erro ao fazer upload da capa:", error);
+        return false;
+    }
+}
+
+export { storage, uploadArrayBuffer, uploadCover };
+

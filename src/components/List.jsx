@@ -16,8 +16,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getArchiveByAnimal } from '../services/GetArchive';
 import { ListComponent } from './ListComponent';
+import { useLogin } from './LoginProvider';
 
 export const List = () => {
+    const { isLogin } = useLogin();
     const { archive_animal } = useParams();
     const [archiveData, setArchiveData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -85,7 +87,7 @@ export const List = () => {
         <>
             {isLoading ? (
                 <div className="fixed inset-0 flex items-center justify-center flex-col bg-black bg-opacity-80 z-50 space-y-8">
-                    <Typography variant="h6" color="white"  gutterBottom>Carregando...</Typography>
+                    <Typography variant="h6" color="white" gutterBottom>Carregando...</Typography>
                     <CircularProgress />
                 </div>
             ) : (
@@ -102,6 +104,13 @@ export const List = () => {
                             <Table>
                                 <TableHead>
                                     <TableRow>
+                                        <TableCell
+                                            align="center"
+                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                            onClick={() => handleRequestSort('id')}
+                                        >
+                                            
+                                        </TableCell>
                                         <TableCell
                                             align="center"
                                             sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
@@ -137,6 +146,22 @@ export const List = () => {
                                         >
                                             Quantidade de Imagens {orderBy === 'quantimage' ? (order === 'asc' ? '▲' : '▼') : ''}
                                         </TableCell>
+                                        {isLogin &&
+                                        <TableCell
+                                            align="center"
+                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                        >
+                                            Editar
+                                        </TableCell>
+                                        }
+                                        {isLogin &&
+                                        <TableCell
+                                            align="center"
+                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                        >
+                                            Deletar
+                                        </TableCell>
+                                        }
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -150,6 +175,9 @@ export const List = () => {
                                             animal={archive_animal}
                                             local={item.archive_local}
                                             isEven={index % 2 === 0}
+                                            cover={item.archive_cover}
+                                            description={item.archive_description}
+                                            patientName={item.archive_patientName}
                                         />
                                     ))}
                                 </TableBody>

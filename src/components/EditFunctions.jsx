@@ -4,7 +4,7 @@ import cornerstoneTools from 'cornerstone-tools';
 import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import hammer from 'hammerjs';
-import { uploadArrayBuffer } from '../firebase/firebase.js';
+import { uploadArrayBuffer, uploadCover } from '../firebase/firebase.js';
 import { addArchive, addImage, addNote } from '../services/SaveArchive.js';
 import { colorNames, rgbColors } from './ColorArrays.jsx';
 
@@ -223,12 +223,26 @@ export const handleSave = async ({ setIsSaving, setProgressMessage, setSaveMessa
     setIsSaving(true);
     setProgressMessage('Criando arquivo..')
     let archive_id = null;
+    let coverURL = null;
+    
+    if (archive.cover) {
+        try {
+            const coverPath = await uploadCover(archive.cover, archive.title);
+            coverURL = coverPath;
+        } catch (error) {
+            console.error("Erro ao salvar a capa:", error);
+        }
+    }
+
     try {
         let archiveData = {
             archive_name: archive.title,
             archive_date: new Date().toDateString(),
             archive_animal: archive.animalType,
             archive_local: archive.location,
+            archive_cover: coverURL,
+            archive_patientName: archive.patientName,
+            archive_description: archive.description,
             nameSwitchs: nameSwitchs,
             idSwitchs: idSwitchs,
             colorsImplanted: colorsImplanted,

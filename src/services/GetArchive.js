@@ -74,3 +74,22 @@ export async function getArchiveByAnimal(archive_animal) {
         throw error;
     }
 };
+
+export async function getArchiveByName(archive_name) {
+    try {
+        const response = await fetch(queries.dataBaseURL + 'api/v1/archive/archiveNames/' + archive_name, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    
+        const responseData = await response.text();
+
+        const jsonData = JSON.parse(responseData);
+        return jsonData;
+    } catch (error) {
+        console.error('Erro:', error.message);
+        throw error;
+    }
+};
