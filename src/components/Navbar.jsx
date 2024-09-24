@@ -55,7 +55,7 @@ export const Navbar = () => {
                         )}
                     </div>
                     <a 
-                        href="src\assets\Manual do Usuário - Atlas Radiográfico.pdf" 
+                        href="./src/assets/Manual do Usuário - Atlas Radiográfico.pdf" 
                         download 
                         className='text-[#F1FAEE] hover:underline'
                     >
