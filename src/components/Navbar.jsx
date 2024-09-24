@@ -56,7 +56,7 @@ export const Navbar = () => {
                     </div>
                     <a 
                         href="https://firebasestorage.googleapis.com/v0/b/atlas-radiografico-reader.appspot.com/o/Manual%20do%20Usuário%20-%20Atlas%20Radiográfico%20.pdf?alt=media&token=ad2fe7d5-7fb3-49c1-9074-e3c4e0f72582" 
-                        download 
+                        download="Manual_do_Usuario_Atlas_Radiografico.pdf" 
                         className='text-[#F1FAEE] hover:underline'
                     >
                         Ajuda
