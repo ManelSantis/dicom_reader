@@ -1,9 +1,10 @@
 import AddIcon from '@mui/icons-material/Add';
 import CancelIcon from '@mui/icons-material/Clear';
 import SaveIcon from '@mui/icons-material/Save';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, Input, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
 import Fab from '@mui/material/Fab';
 import React, { useRef, useState } from 'react';
+import { getArchiveByName } from '../../services/GetArchive';
 
 export const Editor = ({ archiveSave, isDisabled }) => {
     const fileInputRef = useRef(null);
@@ -11,7 +12,10 @@ export const Editor = ({ archiveSave, isDisabled }) => {
     const [title, setTitle] = useState('');
     const [animalType, setAnimalType] = useState('');
     const [location, setLocation] = useState('');
-    const [error, setError] = useState('');
+    const [description, setDescription] = useState('');
+    const [patientName, setPatientName] = useState('');
+    const [cover, setCover] = useState(null);
+    const [errors, setErrors] = useState({});
 
     const fileInputClick = () => {
         if (fileInputRef.current) {
@@ -19,27 +23,53 @@ export const Editor = ({ archiveSave, isDisabled }) => {
         }
     };
 
-    const handleSave = () => {
-        if (!title || !animalType || !location) {
-            setError('Todos os campos são obrigatórios.');
+    const handleSave = async () => {
+        const newErrors = {};
+
+        if (!title) newErrors.title = 'Campo Obrigatório';
+
+        console.log(title)
+        const nameExist = await getArchiveByName(title);
+
+        console.log(nameExist);
+
+        if (nameExist.exists) newErrors.title = nameExist.message;
+
+        if (!animalType) newErrors.animalType = 'Campo Obrigatório';
+        if (!location) newErrors.location = 'Campo Obrigatório';
+        if (!patientName) newErrors.patientName = 'Campo Obrigatório';
+        if (!cover) newErrors.cover = 'Campo Obrigatório';
+        if (!description) newErrors.description = 'Campo Obrigatório';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        archiveSave({ title, animalType, location });
+        archiveSave({ title, animalType, location, patientName, cover, description });
         setOpen(false);
         setTitle('');
         setAnimalType('');
         setLocation('');
-        setError('');
+        setPatientName('');
+        setCover(null);
+        setDescription('');
+        setErrors({});
     };
 
     const handleClose = () => {
         setOpen(false);
-        setError('');
+        setErrors({});
     };
 
     const handleOpenDialog = () => {
         setOpen(true);
+    };
+
+    const handleCoverChange = (event) => {
+        if (event.target.files && event.target.files[0]) {
+            setCover(event.target.files[0]); // Salva o arquivo selecionado no estado
+        }
     };
 
     return (
@@ -66,15 +96,17 @@ export const Editor = ({ archiveSave, isDisabled }) => {
                 onClose={handleClose}
                 aria-labelledby="dialog-title"
                 aria-describedby="dialog-description"
-                sx={{ '& .MuiDialog-paper': { width: '400px', maxWidth: '400px' } }}
+                sx={{ '& .MuiDialog-paper': { width: '600px', maxWidth: '600px' } }}
             >
                 <DialogTitle id="dialog-title">
-                    Salvar Novo Artigo
+                    Salvar Novo Arquivo
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="dialog-description">
-                        Preencha as informações para salvar o artigo
+                        Preencha as informações para salvar o arquivo
                     </DialogContentText>
+
+                    {/* Campo de Título */}
                     <TextField
                         autoFocus
                         margin="dense"
@@ -85,10 +117,42 @@ export const Editor = ({ archiveSave, isDisabled }) => {
                         variant="outlined"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        error={Boolean(error)}
-                        helperText={error}
+                        error={Boolean(errors.title)}
+                        helperText={errors.title}
                     />
-                    <FormControl fullWidth margin="dense">
+
+                    {/* Campo de Nome do Paciente */}
+                    <TextField
+                        margin="dense"
+                        id="patient-name"
+                        label="Nome do Paciente"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={patientName}
+                        error={Boolean(errors.patientName)}
+                        helperText={errors.patientName}
+                        onChange={(e) => setPatientName(e.target.value)}
+                    />
+
+                    {/* Campo de Descrição */}
+                    <TextField
+                        margin="dense"
+                        id="description"
+                        label="Descrição"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        variant="outlined"
+                        value={description}
+                        error={Boolean(errors.description)}
+                        helperText={errors.description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
+
+                    {/* Campo de Tipo do Animal */}
+                    <FormControl fullWidth margin="dense" error={Boolean(errors.animalType)}>
                         <InputLabel id="animal-type-label">Tipo do Animal</InputLabel>
                         <Select
                             labelId="animal-type-label"
@@ -103,8 +167,15 @@ export const Editor = ({ archiveSave, isDisabled }) => {
                             <MenuItem value={'cutia'}>Cutia</MenuItem>
                             <MenuItem value={'moco'}>Mocó</MenuItem>
                         </Select>
+                        {Boolean(errors.animalType) &&
+                            <Typography variant="caption" color="error" sx={{ fontSize: '0.75rem', marginTop: '4px', marginLeft: '16px' }}>
+                                {errors.animalType}
+                            </Typography>
+                        }
                     </FormControl>
-                    <FormControl fullWidth margin="dense">
+
+                    {/* Campo de Local */}
+                    <FormControl fullWidth margin="dense" error={Boolean(errors.location)}>
                         <InputLabel id="location-label">Local</InputLabel>
                         <Select
                             labelId="location-label"
@@ -121,8 +192,34 @@ export const Editor = ({ archiveSave, isDisabled }) => {
                             <MenuItem value={'abdome'}>Abdome</MenuItem>
                             <MenuItem value={'pelve'}>Pelve</MenuItem>
                         </Select>
+                        {Boolean(errors.location) &&
+                            <Typography variant="caption" color="error" sx={{ fontSize: '0.75rem', marginTop: '4px', marginLeft: '16px' }}>
+                                {errors.location}
+                            </Typography>
+                        }
+                    </FormControl>
+
+                    {/* Campo de Capa (Upload de Imagem) */}
+                    <FormControl fullWidth margin="dense" sx={{ marginTop: '16px' }}>
+                        <InputLabel shrink htmlFor="cover" sx={{ cursor: 'pointer' }}>
+                            Capa (JPEG, PNG)
+                        </InputLabel>
+                        <Input
+                            id="cover"
+                            type="file"
+                            inputProps={{ accept: 'image/jpeg,image/png' }}
+                            onChange={handleCoverChange}
+                            error={Boolean(errors.cover)}
+                        />
+                        {cover && <Typography variant="body2" color="textSecondary">{cover.name}</Typography>}
+                        {Boolean(errors.cover) &&
+                            <Typography variant="caption" color="error" sx={{ fontSize: '0.75rem', marginTop: '4px', marginLeft: '16px' }}>
+                                {errors.cover}
+                            </Typography>
+                        }
                     </FormControl>
                 </DialogContent>
+
                 <DialogActions>
                     <Button onClick={handleClose}>Cancelar</Button>
                     <Button id="save" onClick={handleSave} variant="contained" color="primary">

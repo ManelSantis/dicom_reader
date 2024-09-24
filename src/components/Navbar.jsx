@@ -34,7 +34,7 @@ export const Navbar = () => {
     };
 
     return (
-        <nav className='bg-[#1D3557] w-full flex items-center'>
+        <nav className='bg-[#1D3557] w-full fixed items-center z-10'>
             <div className="max-w-screen-xl px-4 py-2 mx-auto flex items-center justify-between w-full relative">
                 <div className="text-[#F1FAEE] text-lg font-bold hidden lg:block">
                     Atlas Radiográfico AniSC
@@ -54,6 +54,13 @@ export const Navbar = () => {
                             </div>
                         )}
                     </div>
+                    <a 
+                        href="src\assets\Manual do Usuário - Atlas Radiográfico.pdf" 
+                        download 
+                        className='text-[#F1FAEE] hover:underline'
+                    >
+                        Ajuda
+                    </a>
                 </div>
                 <div className="flex items-center">
                     {isLogin ? (

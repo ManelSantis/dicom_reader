@@ -1,4 +1,4 @@
-import BrushIcon from '@mui/icons-material/Brush';
+import ImageSearch from '@mui/icons-material/ImageSearch';
 import InfoIcon from '@mui/icons-material/Info';
 import RestoreIcon from '@mui/icons-material/Restore';
 import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Switch, Typography } from '@mui/material';
@@ -103,8 +103,8 @@ export const ShowDicom = () => {
     useEffect(() => {
 
         if (archiveData && archiveData.nameSwitchs && archiveData.idSwitchs && archiveData.colorsImpanted && archiveData.typeAnnotationsImplanted) {
-        console.log(archive_id)
-           
+            console.log(archive_id)
+
             const newAnnotations = archiveData.nameSwitchs.map((name, index) => ({
                 name,
                 color: archiveData.colorsImpanted[index],
@@ -125,7 +125,7 @@ export const ShowDicom = () => {
     return (
         <>
             {pseudoColor && (
-                <ResizableDraggableDiv />
+                <ResizableDraggableDiv cover={archiveData.archive_cover} />
             )}
             <div style={{ height: newHeight + 'px' }} className="flex w-full items-center bg-black" onContextMenu={() => false}>
                 <div className='w-[80%] h-full'>
@@ -133,7 +133,7 @@ export const ShowDicom = () => {
                         <div id="dicomImage" className="w-[99%] h-[97%] bg-blue-400 relative">
                             <div className='flex flex-col absolute top-[2%] left-[1%] z-20 space-y-2'>
                                 <Fab color="success" id='pseudo' onClick={togglePseudoColor}>
-                                    <BrushIcon />
+                                    <ImageSearch />
                                 </Fab>
                                 <input type="file" id="fileInput" accept=".dcm" multiple className="hidden" ref={null} />
                                 <Fab color="error" id="reset" onClick={handleReset}>
@@ -188,28 +188,13 @@ export const ShowDicom = () => {
                 </DialogTitle>
                 <DialogContent dividers>
                     <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Nome do paciente:</strong> {dicomData[0] || 'Não Encontrado'}
+                        <strong>Nome do Paciente:</strong> {archiveData.archive_patientName}
                     </Typography>
                     <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Data da imagem:</strong> {dicomData[1] || 'Não Encontrado'}
+                        <strong>Data do Exame:</strong> {dicomData[1] || 'Não Encontrado'}
                     </Typography>
                     <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Doutor responsável:</strong> {dicomData[2] || 'Não Encontrado'}
-                    </Typography>
-                    <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Local:</strong> {dicomData[3] || 'Não Encontrado'}
-                    </Typography>
-                    <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Máquina:</strong> {dicomData[4] || 'Não Encontrado'}
-                    </Typography>
-                    <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Modelo do equipamento:</strong> {dicomData[5] || 'Não Encontrado'}
-                    </Typography>
-                    <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Modalidade:</strong> {dicomData[6] || 'Não Encontrado'}
-                    </Typography>
-                    <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Descrição do estudo:</strong> {dicomData[7] || 'Não Encontrado'}
+                        <strong>Descrição:</strong> {archiveData.archive_description}
                     </Typography>
                 </DialogContent>
                 <DialogActions>

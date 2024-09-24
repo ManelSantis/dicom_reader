@@ -1,14 +1,14 @@
 import React from 'react';
 import { Rnd } from 'react-rnd';
 
-export const ResizableDraggableDiv = () => {
+export const ResizableDraggableDiv = ({cover}) => {
     return (
         <Rnd
             default={{
                 x: 800,
                 y: 100,
-                width: 330,
-                height: 330,
+                width: 400,
+                height: 260,
             }}
             minWidth={100}
             minHeight={100}
@@ -22,7 +22,9 @@ export const ResizableDraggableDiv = () => {
               }}
             
         >
-            <canvas id="canvas" style={{ width: '100%', height: '100%' }}></canvas>
+            <img src={cover} style={{
+                                        width: '100%', height:'100%'}}
+                                        alt="" />
         </Rnd>
     );
 };
