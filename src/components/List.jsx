@@ -21,6 +21,7 @@ import { useLogin } from './LoginProvider';
 export const List = () => {
     const { isLogin } = useLogin();
     const { archive_animal } = useParams();
+    const [newHeight, setNewHeight] = useState(0);
     const [archiveData, setArchiveData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +74,22 @@ export const List = () => {
         setCurrentPage(0);
     };
 
+    useEffect(() => {
+        function updateHeight() {
+            const navbarHeight = document.querySelector('nav').offsetHeight;
+            const windowHeight = window.innerHeight;
+            const calculatedHeight = windowHeight - navbarHeight;
+            setNewHeight(calculatedHeight);
+        }
+
+        window.addEventListener('resize', updateHeight);
+        updateHeight();
+
+        return () => {
+            window.removeEventListener('resize', updateHeight);
+        };
+    }, []);
+
     const handleRequestSort = (property) => {
         const isAsc = orderBy === property && order === 'asc';
         setOrder(isAsc ? 'desc' : 'asc');
@@ -92,108 +109,109 @@ export const List = () => {
                 </div>
             ) : (
                 <>
-                    <Box display="flex" flexDirection="column" alignItems="center" mt={4}>
-                        <TextField
-                            label="Pesquisar por nome"
-                            variant="outlined"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            sx={{ mb: 2, width: '90%', maxWidth: '80%' }}
-                        />
-                        <TableContainer component={Paper} sx={{ width: '90%', maxWidth: '80%' }}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                            onClick={() => handleRequestSort('id')}
-                                        >
-                                            
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                            onClick={() => handleRequestSort('id')}
-                                        >
-                                            ID {orderBy === 'id' ? (order === 'asc' ? '▲' : '▼') : ''}
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                            onClick={() => handleRequestSort('archive_name')}
-                                        >
-                                            Nome {orderBy === 'archive_name' ? (order === 'asc' ? '▲' : '▼') : ''}
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                            onClick={() => handleRequestSort('archive_local')}
-                                        >
-                                            Local {orderBy === 'archive_local' ? (order === 'asc' ? '▲' : '▼') : ''}
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                            onClick={() => handleRequestSort('archive_date')}
-                                        >
-                                            Data de Armazenamento {orderBy === 'archive_date' ? (order === 'asc' ? '▲' : '▼') : ''}
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                            onClick={() => handleRequestSort('quantimage')}
-                                        >
-                                            Quantidade de Imagens {orderBy === 'quantimage' ? (order === 'asc' ? '▲' : '▼') : ''}
-                                        </TableCell>
-                                        {isLogin &&
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                        >
-                                            Editar
-                                        </TableCell>
-                                        }
-                                        {isLogin &&
-                                        <TableCell
-                                            align="center"
-                                            sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
-                                        >
-                                            Deletar
-                                        </TableCell>
-                                        }
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {currentItems.map((item, index) => (
-                                        <ListComponent
-                                            key={index}
-                                            id={item.archive_id}
-                                            name={item.archive_name}
-                                            date={item.archive_date}
-                                            countImages={item.quantimage}
-                                            animal={archive_animal}
-                                            local={item.archive_local}
-                                            isEven={index % 2 === 0}
-                                            cover={item.archive_cover}
-                                            description={item.archive_description}
-                                            patientName={item.archive_patientName}
-                                        />
-                                    ))}
-                                </TableBody>
-                            </Table>
-                            <TablePagination
-                                rowsPerPageOptions={[5, 10, 15, 20]}
-                                component="div"
-                                count={filteredData.length}
-                                rowsPerPage={rowsPerPage}
-                                page={currentPage}
-                                labelRowsPerPage="Linhas por página:"
-                                onPageChange={handleChangePage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
+                    <div className="w-full mb-16 h-full">
+                        <Box display="flex" flexDirection="column" alignItems="center" mt={4}>
+                            <TextField
+                                label="Pesquisar por nome"
+                                variant="outlined"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                sx={{ mb: 2, width: '90%', maxWidth: '80%' }}
                             />
-                        </TableContainer>
-                    </Box>
+                            <TableContainer component={Paper} sx={{ width: '90%', maxWidth: '80%' }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE' }}
+                                            >
+
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                                onClick={() => handleRequestSort('id')}
+                                            >
+                                                ID {orderBy === 'id' ? (order === 'asc' ? '▲' : '▼') : ''}
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                                onClick={() => handleRequestSort('archive_name')}
+                                            >
+                                                Nome {orderBy === 'archive_name' ? (order === 'asc' ? '▲' : '▼') : ''}
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                                onClick={() => handleRequestSort('archive_local')}
+                                            >
+                                                Local {orderBy === 'archive_local' ? (order === 'asc' ? '▲' : '▼') : ''}
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                                onClick={() => handleRequestSort('archive_date')}
+                                            >
+                                                Data de Armazenamento {orderBy === 'archive_date' ? (order === 'asc' ? '▲' : '▼') : ''}
+                                            </TableCell>
+                                            <TableCell
+                                                align="center"
+                                                sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE', cursor: 'pointer' }}
+                                                onClick={() => handleRequestSort('quantimage')}
+                                            >
+                                                Quantidade de Imagens {orderBy === 'quantimage' ? (order === 'asc' ? '▲' : '▼') : ''}
+                                            </TableCell>
+                                            {isLogin &&
+                                                <TableCell
+                                                    align="center"
+                                                    sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE'}}
+                                                >
+                                                    Editar
+                                                </TableCell>
+                                            }
+                                            {isLogin &&
+                                                <TableCell
+                                                    align="center"
+                                                    sx={{ bgcolor: '#172452', fontWeight: 'bold', color: '#F1FAEE'}}
+                                                >
+                                                    Deletar
+                                                </TableCell>
+                                            }
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {currentItems.map((item, index) => (
+                                            <ListComponent
+                                                key={index}
+                                                id={item.archive_id}
+                                                name={item.archive_name}
+                                                date={item.archive_date}
+                                                countImages={item.quantimage}
+                                                animal={archive_animal}
+                                                local={item.archive_local}
+                                                isEven={index % 2 === 0}
+                                                cover={item.archive_cover}
+                                                description={item.archive_description}
+                                                patientName={item.archive_patientName}
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                <TablePagination
+                                    rowsPerPageOptions={[5, 10, 15, 20]}
+                                    component="div"
+                                    count={filteredData.length}
+                                    rowsPerPage={rowsPerPage}
+                                    page={currentPage}
+                                    labelRowsPerPage="Linhas por página:"
+                                    onPageChange={handleChangePage}
+                                    onRowsPerPageChange={handleChangeRowsPerPage}
+                                />
+                            </TableContainer>
+                        </Box>
+                    </div>
                 </>
             )}
         </>

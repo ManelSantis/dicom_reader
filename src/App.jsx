@@ -15,20 +15,26 @@ import theme from './styles/palette.jsx';
 function App() {
   return (
     <>
+
       <ThemeProvider theme={theme}>
-      <LoginProvider>
-        <Navbar />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path='/' element={<Home />} />
-          <Route path='about' element={<About />} />
-          <Route path="edit" element={<ProtectedRoute element={<Edit />} />} />
-          <Route path='list/:archive_animal' element={<List />} />
-          <Route path=':archive_animal/:archive_id' element={<ShowDicom />} />
-          <Route path='edit/:archive_id' element={<EditExist />} />
-        </Routes>
-      </LoginProvider>
+        <LoginProvider>
+          <div className='flex items-center flex-col'>
+            <Navbar />
+            <div className='w-full mt-[3.2rem] h-full'>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path='/' element={<Home />} />
+                <Route path='about' element={<About />} />
+                <Route path="edit" element={<ProtectedRoute element={<Edit />} />} />
+                <Route path='list/:archive_animal' element={<List />} />
+                <Route path=':archive_animal/:archive_id' element={<ShowDicom />} />
+                <Route path='edit/:archive_id' element={<EditExist />} />
+              </Routes>
+            </div>
+          </div>
+        </LoginProvider>
       </ThemeProvider>
+
     </>
   )
 }
