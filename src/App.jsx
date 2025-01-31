@@ -32,7 +32,6 @@ function App() {
           </div>
         </LoginProvider>
       </ThemeProvider>
-
     </>
   )
 }
