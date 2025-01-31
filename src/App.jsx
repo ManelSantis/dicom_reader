@@ -1,6 +1,5 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { Route, Routes } from 'react-router-dom';
-import { About } from './components/About.jsx';
 import { Edit } from './components/Edit.jsx';
 import { EditExist } from './components/EditExist.jsx';
 import { Home } from './components/Home.jsx';
@@ -24,7 +23,6 @@ function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path='/' element={<Home />} />
-                <Route path='about' element={<About />} />
                 <Route path="edit" element={<ProtectedRoute element={<Edit />} />} />
                 <Route path='list/:archive_animal' element={<List />} />
                 <Route path=':archive_animal/:archive_id' element={<ShowDicom />} />

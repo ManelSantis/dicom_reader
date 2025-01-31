@@ -188,7 +188,7 @@ export const ShowDicom = () => {
                 </DialogTitle>
                 <DialogContent dividers>
                     <Typography variant="body1" color="textPrimary" paragraph>
-                        <strong>Nome do Paciente:</strong> {archiveData.archive_patientName}
+                        <strong>Nome do Paciente:</strong> {archiveData.archive_patientname}
                     </Typography>
                     <Typography variant="body1" color="textPrimary" paragraph>
                         <strong>Data do Exame:</strong> {dicomData[1] || 'Não Encontrado'}
