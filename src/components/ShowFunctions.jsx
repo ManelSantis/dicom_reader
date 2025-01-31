@@ -1124,8 +1124,9 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
         updateImage(state.currentImageId);
     }
 
+    //Obter dados do Arquivo DICOM
     async function getDicomData() {
-        const dicomFileBuffer = await state.imageList[0].arrayBuffer();
+        const dicomFileBuffer = await state.imageList[0].arrayBuffer(); 
         const byteArray = new Uint8Array(dicomFileBuffer);
         const dataSet = dicomParser.parseDicom(byteArray);
 
@@ -1139,12 +1140,18 @@ export const ShowFunctions = (archive_id, setProgress, setProgressMessage, setIs
             return `${day}/${month}/${year}`;
         };
 
-        const values = [dataSet.string('x00100010'), formatDate(dataSet.string('x00080020')),
-        dataSet.string('x00080090'), dataSet.string('x00080080'),
-        dataSet.string('x00080070'), dataSet.string('x00081090'),
-        dataSet.string('x00080060'), dataSet.string('x00081030')];
+        const values = [
+            dataSet.string('x00100010'), // Nome do paciente
+            formatDate(dataSet.string('x00080020')), // Data do estudo
+            dataSet.string('x00080090'), // Nome do médico solicitante
+            dataSet.string('x00080080'), // Nome da instituição
+            dataSet.string('x00080070'), // Fabricante do equipamento
+            dataSet.string('x00081090'), // Nome do modelo do fabricante
+            dataSet.string('x00080060'), // Modalidade (ex: CT, MR, etc.)
+            dataSet.string('x00081030')  // Descrição do estudo
+        ];
+        
 
-        console.log(values)
         setDicomData(values);
     }
 
